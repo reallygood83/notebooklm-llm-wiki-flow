@@ -53,15 +53,14 @@ def extract_checklist_items(qa_answer: str, report_markdown: str, max_items: int
     for line in report_markdown.splitlines():
         stripped = line.strip()
         if stripped.startswith("##") and (
-            "Policy Recommendations" in stripped
-            or "Considerations for Education" in stripped
+            "Policy Recommendations" in stripped or "Considerations for Education" in stripped
         ):
             collecting = True
             continue
         if collecting and stripped.startswith("##"):
             break
         if collecting and (re.match(r"^\d+\.", stripped) or stripped.startswith("*")):
-            item = _clean_list_item(stripped.lstrip('*').strip())
+            item = _clean_list_item(stripped.lstrip("*").strip())
             if item and item not in items:
                 items.append(item)
     return items[:max_items]
@@ -93,7 +92,15 @@ def build_comparison_draft(report_markdown: str, qa_answer: str) -> ComparisonDr
     )
 
 
-def render_checklist_note(checklist: Iterable[str], sources: list[str], created: str) -> str:
+def _yaml_list_lines(key: str, values: list[str]) -> list[str]:
+    if not values:
+        return []
+    lines = [f"{key}:"]
+    lines.extend(f"  - {value}" for value in values)
+    return lines
+
+
+def render_checklist_note(checklist: Iterable[str], sources: list[str], source_urls: list[str], created: str) -> str:
     body = [
         "---",
         "title: Education vertical AI policy checklist",
@@ -101,13 +108,16 @@ def render_checklist_note(checklist: Iterable[str], sources: list[str], created:
         f"updated: {created}",
         "type: query",
         "tags: [ai-ml, education, technology, question]",
-        f"sources: [{', '.join(sources)}]",
+        f"source_notes: [{', '.join(sources)}]",
+    ]
+    body.extend(_yaml_list_lines("source_urls", source_urls))
+    body.extend([
         "---",
         "",
         "# Education vertical AI policy checklist",
         "",
         "## Checklist",
-    ]
+    ])
     body.extend(f"- [ ] {item}" for item in checklist)
     body.extend([
         "",
@@ -118,15 +128,18 @@ def render_checklist_note(checklist: Iterable[str], sources: list[str], created:
     return "\n".join(body)
 
 
-def render_openai_entity(created: str, sources: list[str]) -> str:
-    return "\n".join([
+def render_openai_entity(created: str, sources: list[str], source_urls: list[str]) -> str:
+    body = [
         "---",
         "title: OpenAI",
         f"created: {created}",
         f"updated: {created}",
         "type: entity",
         "tags: [ai-ml, company, technology]",
-        f"sources: [{', '.join(sources)}]",
+        f"source_notes: [{', '.join(sources)}]",
+    ]
+    body.extend(_yaml_list_lines("source_urls", source_urls))
+    body.extend([
         "---",
         "",
         "# OpenAI",
@@ -144,17 +157,21 @@ def render_openai_entity(created: str, sources: list[str]) -> str:
         "[[anthropic]], [[llm-wiki]], [[rag]]",
         "",
     ])
+    return "\n".join(body)
 
 
-def render_anthropic_entity(created: str, sources: list[str]) -> str:
-    return "\n".join([
+def render_anthropic_entity(created: str, sources: list[str], source_urls: list[str]) -> str:
+    body = [
         "---",
         "title: Anthropic",
         "created: 2026-04-09",
         f"updated: {created}",
         "type: entity",
         "tags: [ai-ml, company, technology]",
-        f"sources: [{', '.join(sources)}]",
+        f"source_notes: [{', '.join(sources)}]",
+    ]
+    body.extend(_yaml_list_lines("source_urls", source_urls))
+    body.extend([
         "---",
         "",
         "# Anthropic",
@@ -172,6 +189,7 @@ def render_anthropic_entity(created: str, sources: list[str]) -> str:
         "[[managed-agents]], [[openai]], [[llm-wiki]]",
         "",
     ])
+    return "\n".join(body)
 
 
 def render_inbox_summary(plan: dict, notebook_id: str, artifacts_dir: Path, share_link: str | None = None) -> str:
@@ -238,12 +256,15 @@ def render_raw_source_pack(plan: dict, created: str) -> str:
         f"source_url: {plan['sources'][0]}",
         "source_site: Anthropic + OpenAI official policy pages",
         f"source_date: {created}",
+    ]
+    lines.extend(_yaml_list_lines("source_urls", plan["sources"]))
+    lines.extend([
         "---",
         "",
         "# Anthropic and OpenAI business policy source pack",
         "",
         "## URLs",
-    ]
+    ])
     lines.extend(f"- {source}" for source in plan["sources"])
     lines.extend([
         "",

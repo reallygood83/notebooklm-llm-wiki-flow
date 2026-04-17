@@ -39,7 +39,8 @@ This repository is designed for people who want:
 3. Run `notebooklm login`
 4. Run `./.venv/bin/nlwflow init-config`
 5. Run `./.venv/bin/nlwflow doctor --json`
-6. Run `./.venv/bin/nlwflow run-policy-compare --json`
+6. Run `./.venv/bin/nlwflow install-obsidian-kit --vault /path/to/vault`
+7. Run `./.venv/bin/nlwflow run-policy-compare --json`
 
 ## Why the LLM Wiki quality rules matter
 
@@ -64,6 +65,7 @@ Those rules live in:
 - `nlwflow init-config` — write a starter config file
 - `nlwflow plan-policy-compare` — emit a built-in Anthropic vs OpenAI policy-comparison source pack
 - `nlwflow run-policy-compare` — create a NotebookLM notebook, generate report/mind-map/Q&A, write wiki notes, and run qmd update
+- `nlwflow install-obsidian-kit` — install an Obsidian-compatible starter kit for users who do not already use Hermes obsidian skills
 - `nlwflow score-report REPORT.md` — score and extract high-signal sections from a NotebookLM report
 
 ## Recommended development workflow
@@ -100,3 +102,12 @@ Helpers:
 - NotebookLM authentication remains a browser login step.
 - The recommended sync model is not "commit on every save" but "commit and push on each stable milestone".
 - Hermes can keep reflecting changes locally while this repo remains the public distribution unit.
+
+## Obsidian properties and clickable sources
+
+This repo now writes Obsidian-friendly properties with two separate source fields:
+- `source_notes` for internal wiki/raw note references
+- `source_urls` for clickable external URLs in Obsidian properties
+
+If a user does not already have Hermes obsidian skills, they can still install the bundled Obsidian starter kit with:
+- `./.venv/bin/nlwflow install-obsidian-kit --vault /path/to/vault`

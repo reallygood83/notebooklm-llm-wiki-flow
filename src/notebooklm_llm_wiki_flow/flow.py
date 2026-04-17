@@ -127,15 +127,17 @@ def run_policy_compare(config_path: str | None = None, *, dry_run: bool = False,
         f"updated: {created}",
         "type: comparison",
         "tags: [ai-ml, education, technology, comparison]",
-        f"sources: [{raw_sources_rel}, {raw_report_rel}]",
+        f"source_notes: [{raw_sources_rel}, {raw_report_rel}]",
+        "source_urls:",
+        *[f"  - {url}" for url in plan['sources']],
         "---",
         "",
         render_comparison_note(draft),
     ])
     comparison_target = _write(cfg.wiki_path / "comparisons/anthropic-vs-openai-education-vertical-ai-policy.md", comparison_note)
-    checklist_target = _write(cfg.wiki_path / "queries/education-vertical-ai-policy-checklist.md", render_checklist_note(draft.checklist, [raw_sources_rel, raw_report_rel], created))
-    openai_target = _write(cfg.wiki_path / "entities/openai.md", render_openai_entity(created, [raw_sources_rel, raw_report_rel]))
-    anthropic_target = _write(cfg.wiki_path / "entities/anthropic.md", render_anthropic_entity(created, [raw_sources_rel, raw_report_rel]))
+    checklist_target = _write(cfg.wiki_path / "queries/education-vertical-ai-policy-checklist.md", render_checklist_note(draft.checklist, [raw_sources_rel, raw_report_rel], plan['sources'], created))
+    openai_target = _write(cfg.wiki_path / "entities/openai.md", render_openai_entity(created, [raw_sources_rel, raw_report_rel], plan['sources']))
+    anthropic_target = _write(cfg.wiki_path / "entities/anthropic.md", render_anthropic_entity(created, [raw_sources_rel, raw_report_rel], plan['sources']))
     inbox_target = _write(cfg.obsidian_vault / f"000-Inbox/Anthropic-vs-OpenAI-정책비교_교육-Vertical-AI_{created}.md", render_inbox_summary(plan, notebook_id, artifacts_dir))
 
     _update_index(cfg.wiki_path / "index.md")

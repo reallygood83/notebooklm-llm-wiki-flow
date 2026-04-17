@@ -9,6 +9,7 @@ from rich import print
 
 from .config import load_config
 from .flow import run_policy_compare
+from .obsidian_kit import install_obsidian_kit
 from .report_parser import extract_report_highlights
 from .workflows import build_policy_compare_plan
 
@@ -39,6 +40,16 @@ def init_config(target: Path = typer.Argument(Path('config/project.yaml'))) -> N
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(source.read_text(encoding='utf-8'), encoding='utf-8')
     print(f"Wrote config to {target}")
+
+
+@app.command('install-obsidian-kit')
+def install_obsidian_kit_command(vault: Path = typer.Option(..., '--vault', help='Target Obsidian vault path'), json_output: bool = typer.Option(False, '--json', help='Emit JSON')) -> None:
+    created = install_obsidian_kit(vault)
+    payload = {'vault': str(vault), 'created': created}
+    if json_output:
+        typer.echo(json.dumps(payload, ensure_ascii=False))
+        raise typer.Exit()
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
 
 
 @app.command('plan-policy-compare')
