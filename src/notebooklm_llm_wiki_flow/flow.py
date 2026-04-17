@@ -16,6 +16,7 @@ from .flow_models import (
     WikiRenderResult,
 )
 from .index_builder import update_index_file
+from .log_builder import append_log_entry
 from .models import WorkflowConfig
 from .notebooklm_client import NotebookLMClient
 from .persistence import GeneratedFile, persist_generated_outputs
@@ -28,6 +29,7 @@ from .policy_compare import (
     render_raw_source_pack,
 )
 from .runner import NotebookLMRunner, run_qmd_update
+from .template_renderer import render_entity_template
 from .wiki_builder import render_comparison_note
 from .workflows import build_policy_compare_plan, load_workflow_yaml, slugify
 
@@ -41,6 +43,36 @@ def _write(path: Path, content: str) -> Path:
 def _safe_filename(title: str) -> str:
     cleaned = re.sub(r"[\\/:*?\"<>|]", "-", title).strip()
     return cleaned or slugify(title)
+
+
+def _render_entity_content(
+    *,
+    entity: dict[str, Any],
+    created: str,
+    source_notes: list[str],
+    source_urls: list[str],
+) -> str:
+    slug = entity["slug"]
+    title = entity["title"]
+    overview = entity.get("overview")
+    policy_posture = entity.get("policy_posture")
+    if overview and policy_posture:
+        related_links = entity.get("related_links") or [f"[[{slug}]]", "[[llm-wiki]]"]
+        return render_entity_template(
+            title=title,
+            created=created,
+            updated=created,
+            source_notes=source_notes,
+            source_urls=source_urls,
+            overview=overview,
+            policy_posture=list(policy_posture),
+            related_links=list(related_links),
+        )
+    if slug == "openai":
+        return render_openai_entity(created, source_notes, source_urls)
+    if slug == "anthropic":
+        return render_anthropic_entity(created, source_notes, source_urls)
+    return _render_generic_entity(title, slug, created, source_notes, source_urls, entity.get("summary"))
 
 
 def _render_generic_entity(title: str, slug: str, created: str, source_notes: list[str], source_urls: list[str], summary: str | None = None) -> str:
@@ -66,23 +98,6 @@ def _render_generic_entity(title: str, slug: str, created: str, source_notes: li
         "",
     ]
     return "\n".join(lines)
-
-
-def _append_log(log_path: Path, title: str, notebook_id: str, created_files: list[str], updated_files: list[str] | None = None) -> None:
-    lines = [
-        f"## [{date.today().isoformat()}] ingest | {title}",
-        "- NotebookLM notebook created and artifacts exported",
-        f"- Notebook ID: {notebook_id}",
-        "- Files created:",
-        *[f"  - {item}" for item in created_files],
-    ]
-    if updated_files:
-        lines.append("- Files updated:")
-        lines.extend(f"  - {item}" for item in updated_files)
-    entry = "\n".join(lines)
-    text = log_path.read_text(encoding="utf-8") if log_path.exists() else ""
-    if entry not in text:
-        log_path.write_text(text.rstrip() + "\n\n" + entry + "\n", encoding="utf-8")
 
 
 def _run_notebook_phase(plan: dict[str, Any], client: NotebookLMClient) -> NotebookRunResult:
@@ -183,12 +198,12 @@ def _render_wiki_phase(plan: dict[str, Any], notebook_run: NotebookRunResult, ar
         slug = entity["slug"]
         title = entity["title"]
         summary = entity.get("summary") or f"{title} 관련 entity 초안"
-        if slug == "openai":
-            content = render_openai_entity(created, [raw_sources_rel, raw_report_rel], plan["sources"])
-        elif slug == "anthropic":
-            content = render_anthropic_entity(created, [raw_sources_rel, raw_report_rel], plan["sources"])
-        else:
-            content = _render_generic_entity(title, slug, created, [raw_sources_rel, raw_report_rel], plan["sources"], entity.get("summary"))
+        content = _render_entity_content(
+            entity=entity,
+            created=created,
+            source_notes=[raw_sources_rel, raw_report_rel],
+            source_urls=plan["sources"],
+        )
         entity_renders.append(EntityRender(slug=slug, title=title, content=content, summary=summary))
 
     return WikiRenderResult(
@@ -301,7 +316,7 @@ def _update_indexes_phase(
         updated_on=wiki_render.created,
     )
     updated_files = ["index.md", "log.md"]
-    _append_log(cfg.wiki_path / "log.md", plan["title"], notebook_run.notebook_id, persist_result.created_files, updated_files)
+    append_log_entry(cfg.wiki_path / "log.md", plan["title"], notebook_run.notebook_id, persist_result.created_files, updated_files)
     return IndexUpdateResult(updated_files=updated_files)
 
 
