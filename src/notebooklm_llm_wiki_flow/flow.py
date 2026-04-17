@@ -15,6 +15,7 @@ from .flow_models import (
     PersistResult,
     WikiRenderResult,
 )
+from .index_builder import update_index_file
 from .notebooklm_client import NotebookLMClient
 from .policy_compare import (
     build_comparison_draft,
@@ -63,26 +64,6 @@ def _render_generic_entity(title: str, slug: str, created: str, source_notes: li
         "",
     ]
     return "\n".join(lines)
-
-
-def _update_index(index_path: Path, comparison_slug: str, comparison_summary: str, checklist_slug: str, checklist_summary: str, entity_entries: list[tuple[str, str]] | None = None) -> None:
-    if not index_path.exists():
-        return
-    text = index_path.read_text(encoding="utf-8")
-    section_lines = {
-        "## Comparisons\n": f"- [[{comparison_slug}]] — {comparison_summary}\n",
-        "## Queries\n": f"- [[{checklist_slug}]] — {checklist_summary}\n",
-    }
-    if entity_entries:
-        for slug, summary in entity_entries:
-            line = f"- [[{slug}]] — {summary}\n"
-            if line.strip() not in text and "## Entities\n" in text:
-                text = text.replace("## Entities\n", "## Entities\n" + line, 1)
-    for header, line in section_lines.items():
-        if line.strip() not in text and header in text:
-            text = text.replace(header, header + line, 1)
-    text = re.sub(r"Last updated: \d{4}-\d{2}-\d{2} \| Total pages: \d+", f"Last updated: {date.today().isoformat()} | Total pages: 13", text)
-    index_path.write_text(text, encoding="utf-8")
 
 
 def _append_log(log_path: Path, title: str, notebook_id: str, created_files: list[str], updated_files: list[str] | None = None) -> None:
@@ -277,13 +258,16 @@ def _update_indexes_phase(
     wiki_render: WikiRenderResult,
     persist_result: PersistResult,
 ) -> IndexUpdateResult:
-    _update_index(
+    update_index_file(
         cfg.wiki_path / "index.md",
-        wiki_render.comparison_slug,
-        f"{wiki_render.comparison_title} 결과를 정리한 비교 문서",
-        wiki_render.checklist_slug,
-        f"{wiki_render.checklist_title} 결과를 정리한 실행 체크리스트",
-        persist_result.entity_entries or None,
+        entity_entries=persist_result.entity_entries,
+        comparison_entries=[
+            (wiki_render.comparison_slug, f"{wiki_render.comparison_title} 결과를 정리한 비교 문서"),
+        ],
+        query_entries=[
+            (wiki_render.checklist_slug, f"{wiki_render.checklist_title} 결과를 정리한 실행 체크리스트"),
+        ],
+        updated_on=wiki_render.created,
     )
     updated_files = ["index.md", "log.md"]
     _append_log(cfg.wiki_path / "log.md", plan["title"], notebook_run.notebook_id, persist_result.created_files, updated_files)
