@@ -17,6 +17,7 @@ from .flow_models import (
 )
 from .index_builder import update_index_file
 from .notebooklm_client import NotebookLMClient
+from .persistence import GeneratedFile, persist_generated_outputs
 from .policy_compare import (
     build_comparison_draft,
     render_anthropic_entity,
@@ -213,33 +214,61 @@ def _persist_outputs_phase(
     artifacts: ArtifactExportResult,
     wiki_render: WikiRenderResult,
 ) -> PersistResult:
-    _write(cfg.wiki_path / wiki_render.raw_sources_rel, wiki_render.raw_sources_content)
-    _write(cfg.wiki_path / wiki_render.raw_report_rel, wiki_render.raw_report_content)
-    comparison_target = _write(
-        cfg.wiki_path / f"comparisons/{wiki_render.comparison_slug}.md",
-        wiki_render.comparison_content,
-    )
-    checklist_target = _write(
-        cfg.wiki_path / f"queries/{wiki_render.checklist_slug}.md",
-        wiki_render.checklist_content,
-    )
-
-    created_files = [
-        wiki_render.raw_sources_rel,
-        wiki_render.raw_report_rel,
-        f"comparisons/{wiki_render.comparison_slug}.md",
-        f"queries/{wiki_render.checklist_slug}.md",
+    generated_files = [
+        GeneratedFile(
+            relative_path=wiki_render.raw_sources_rel,
+            target_path=cfg.wiki_path / wiki_render.raw_sources_rel,
+            content=wiki_render.raw_sources_content,
+        ),
+        GeneratedFile(
+            relative_path=wiki_render.raw_report_rel,
+            target_path=cfg.wiki_path / wiki_render.raw_report_rel,
+            content=wiki_render.raw_report_content,
+        ),
+        GeneratedFile(
+            relative_path=f"comparisons/{wiki_render.comparison_slug}.md",
+            target_path=cfg.wiki_path / f"comparisons/{wiki_render.comparison_slug}.md",
+            content=wiki_render.comparison_content,
+        ),
+        GeneratedFile(
+            relative_path=f"queries/{wiki_render.checklist_slug}.md",
+            target_path=cfg.wiki_path / f"queries/{wiki_render.checklist_slug}.md",
+            content=wiki_render.checklist_content,
+        ),
     ]
-    entity_entries: list[tuple[str, str]] = []
-    entity_targets: list[str] = []
-    for entity in wiki_render.entity_renders:
-        target = _write(cfg.wiki_path / f"entities/{entity.slug}.md", entity.content)
-        entity_targets.append(str(target))
-        entity_entries.append((entity.slug, entity.summary))
-        created_files.append(f"entities/{entity.slug}.md")
 
-    inbox_note_path = cfg.obsidian_vault / f"000-Inbox/{_safe_filename(plan['title'])}_{wiki_render.created}.md"
-    inbox_target = _write(inbox_note_path, render_inbox_summary(plan, notebook_run.notebook_id, artifacts.artifacts_dir))
+    entity_entries: list[tuple[str, str]] = []
+    for entity in wiki_render.entity_renders:
+        generated_files.append(
+            GeneratedFile(
+                relative_path=f"entities/{entity.slug}.md",
+                target_path=cfg.wiki_path / f"entities/{entity.slug}.md",
+                content=entity.content,
+            )
+        )
+        entity_entries.append((entity.slug, entity.summary))
+
+    inbox_relative = f"000-Inbox/{_safe_filename(plan['title'])}_{wiki_render.created}.md"
+    generated_files.append(
+        GeneratedFile(
+            relative_path=inbox_relative,
+            target_path=cfg.obsidian_vault / inbox_relative,
+            content=render_inbox_summary(plan, notebook_run.notebook_id, artifacts.artifacts_dir),
+        )
+    )
+
+    persistence_result = persist_generated_outputs(
+        notebook_id=notebook_run.notebook_id,
+        artifacts_dir=artifacts.artifacts_dir,
+        generated_files=generated_files,
+        created_at=wiki_render.created,
+    )
+
+    comparison_target = cfg.wiki_path / f"comparisons/{wiki_render.comparison_slug}.md"
+    checklist_target = cfg.wiki_path / f"queries/{wiki_render.checklist_slug}.md"
+    entity_targets = [str(cfg.wiki_path / f"entities/{entity.slug}.md") for entity in wiki_render.entity_renders]
+    inbox_target = cfg.obsidian_vault / inbox_relative
+    created_files = [item.relative_path for item in generated_files if not item.relative_path.startswith("000-Inbox/")]
 
     return PersistResult(
         comparison_target=comparison_target,
@@ -247,6 +276,7 @@ def _persist_outputs_phase(
         entity_targets=entity_targets,
         inbox_target=inbox_target,
         created_files=created_files,
+        manifest_path=persistence_result.manifest_path,
         entity_entries=entity_entries,
     )
 
@@ -306,6 +336,7 @@ def _run_plan(
         "checklist_page": str(persist_result.checklist_target),
         "entity_pages": persist_result.entity_targets,
         "inbox_note": str(persist_result.inbox_target),
+        "manifest_path": str(persist_result.manifest_path),
         "qmd_updated": bool(qmd_output is not None),
         "sources": [source["url"] for source in notebook_run.sources],
         "mind_map_note_id": notebook_run.mind_map.get("note_id"),

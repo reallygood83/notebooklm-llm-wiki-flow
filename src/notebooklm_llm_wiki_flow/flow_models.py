@@ -57,6 +57,7 @@ class PersistResult:
     entity_targets: list[str]
     inbox_target: Path
     created_files: list[str]
+    manifest_path: Path
     entity_entries: list[tuple[str, str]] = field(default_factory=list)
 
 

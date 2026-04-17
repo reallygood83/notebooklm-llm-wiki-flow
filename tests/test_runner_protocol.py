@@ -128,3 +128,4 @@ def test_run_policy_compare_accepts_injected_client(monkeypatch: pytest.MonkeyPa
     assert payload["notebook_id"] == "nb-demo"
     assert Path(payload["comparison_page"]).exists()
     assert Path(payload["inbox_note"]).exists()
+    assert Path(payload["manifest_path"]).exists()
