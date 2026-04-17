@@ -8,3 +8,10 @@ artifacts/
 .cache/
 *.log
 notebooklm-auth/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+docs/.pdca-*.json
+uv.lock

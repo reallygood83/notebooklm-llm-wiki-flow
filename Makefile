@@ -1,4 +1,4 @@
-PYTHON ?= python3.13
+PYTHON ?= python3.11
 VENV = .venv
 
 bootstrap:
