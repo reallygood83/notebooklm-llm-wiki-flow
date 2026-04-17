@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import load_config
+from .notebooklm_client import NotebookLMClient
 from .policy_compare import (
     build_comparison_draft,
     render_anthropic_entity,
@@ -93,33 +94,40 @@ def _append_log(log_path: Path, title: str, notebook_id: str, created_files: lis
         log_path.write_text(text.rstrip() + "\n\n" + entry + "\n", encoding="utf-8")
 
 
-def _run_plan(plan: dict[str, Any], config_path: str | None = None, *, dry_run: bool = False, qmd_update_enabled: bool = True) -> dict[str, Any]:
+def _run_plan(
+    plan: dict[str, Any],
+    config_path: str | None = None,
+    *,
+    dry_run: bool = False,
+    qmd_update_enabled: bool = True,
+    client: NotebookLMClient | None = None,
+) -> dict[str, Any]:
     cfg = load_config(config_path) if config_path else load_config()
     if dry_run:
         return {"mode": "dry-run", "plan": plan}
 
-    runner = NotebookLMRunner(cfg.notebooklm_command)
-    notebook = runner.create_notebook(plan["title"])
+    notebook_client = client if client is not None else NotebookLMRunner(cfg.notebooklm_command)
+    notebook = notebook_client.create_notebook(plan["title"])
     notebook_id = notebook["id"]
 
     sources = []
     for source_url in plan["sources"]:
-        source = runner.add_source(notebook_id, source_url)
-        runner.wait_source(notebook_id, source["id"])
+        source = notebook_client.add_source(notebook_id, source_url)
+        notebook_client.wait_source(notebook_id, source["id"])
         sources.append(source)
 
-    report_task = runner.generate_report(notebook_id, plan["report_append"])
-    runner.wait_artifact(notebook_id, report_task["task_id"])
-    mind_map = runner.generate_mind_map(notebook_id)
-    qa = runner.ask(notebook_id, plan["question"])
+    report_task = notebook_client.generate_report(notebook_id, plan["report_append"])
+    notebook_client.wait_artifact(notebook_id, report_task["task_id"])
+    mind_map = notebook_client.generate_mind_map(notebook_id)
+    qa = notebook_client.ask(notebook_id, plan["question"])
 
     artifacts_dir = cfg.artifacts_root / notebook_id
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     report_path = artifacts_dir / "report.md"
     mind_map_path = artifacts_dir / "mind-map.json"
     qa_path = artifacts_dir / "qa.json"
-    runner.download_report(notebook_id, report_path)
-    runner.download_mind_map(notebook_id, mind_map_path)
+    notebook_client.download_report(notebook_id, report_path)
+    notebook_client.download_mind_map(notebook_id, mind_map_path)
     qa_path.write_text(json.dumps(qa, ensure_ascii=False, indent=2), encoding="utf-8")
 
     created = date.today().isoformat()
@@ -228,11 +236,24 @@ def _run_plan(plan: dict[str, Any], config_path: str | None = None, *, dry_run: 
     }
 
 
-def run_policy_compare(config_path: str | None = None, *, dry_run: bool = False, qmd_update_enabled: bool = True) -> dict[str, Any]:
+def run_policy_compare(
+    config_path: str | None = None,
+    *,
+    dry_run: bool = False,
+    qmd_update_enabled: bool = True,
+    client: NotebookLMClient | None = None,
+) -> dict[str, Any]:
     plan = build_policy_compare_plan()
-    return _run_plan(plan, config_path, dry_run=dry_run, qmd_update_enabled=qmd_update_enabled)
+    return _run_plan(plan, config_path, dry_run=dry_run, qmd_update_enabled=qmd_update_enabled, client=client)
 
 
-def run_from_yaml(workflow_path: str | Path, config_path: str | None = None, *, dry_run: bool = False, qmd_update_enabled: bool = True) -> dict[str, Any]:
+def run_from_yaml(
+    workflow_path: str | Path,
+    config_path: str | None = None,
+    *,
+    dry_run: bool = False,
+    qmd_update_enabled: bool = True,
+    client: NotebookLMClient | None = None,
+) -> dict[str, Any]:
     plan = load_workflow_yaml(workflow_path)
-    return _run_plan(plan, config_path, dry_run=dry_run, qmd_update_enabled=qmd_update_enabled)
+    return _run_plan(plan, config_path, dry_run=dry_run, qmd_update_enabled=qmd_update_enabled, client=client)
