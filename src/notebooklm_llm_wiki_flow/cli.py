@@ -7,6 +7,7 @@ from pathlib import Path
 import typer
 from rich import print
 
+from . import __version__
 from .config import load_config
 from .flow import run_from_yaml, run_policy_compare
 from .obsidian_kit import install_obsidian_kit
@@ -14,6 +15,26 @@ from .report_parser import extract_report_highlights
 from .workflows import build_policy_compare_plan
 
 app = typer.Typer(help="NotebookLM → LLM Wiki → Obsidian workflow helper")
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(f"nlwflow {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def _root(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-V",
+        help="Show version and exit.",
+        callback=_version_callback,
+        is_eager=True,
+    ),
+) -> None:
+    """nlwflow: NotebookLM → LLM Wiki → Obsidian workflow helper."""
 
 
 @app.command()
