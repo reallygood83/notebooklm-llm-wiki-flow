@@ -14,6 +14,7 @@ This repository is designed for people who want:
 - bootstrap script that installs the core local dependencies
 - example config and example policy-comparison workflow inputs
 - report and mind-map parsing helpers
+- policy-compare runner that actually executes NotebookLM and writes wiki outputs
 - wiki note rendering helper
 - LLM Wiki priority rules so the most important claims survive ingestion
 - GitHub Actions test workflow
@@ -23,6 +24,7 @@ This repository is designed for people who want:
 
 - `src/notebooklm_llm_wiki_flow/` — Python package and CLI
 - `scripts/bootstrap.sh` — local setup for Python env, notebooklm-py, Playwright, and qmd
+- `scripts/publish.sh` — add/commit/push helper for GitHub sync
 - `config/project.example.yaml` — user-editable local config
 - `config/prompts/` — workflow prompts and LLM Wiki priority rules
 - `examples/` — example workflow inputs
@@ -37,7 +39,7 @@ This repository is designed for people who want:
 3. Run `notebooklm login`
 4. Run `./.venv/bin/nlwflow init-config`
 5. Run `./.venv/bin/nlwflow doctor --json`
-6. Run `./.venv/bin/nlwflow plan-policy-compare --json`
+6. Run `./.venv/bin/nlwflow run-policy-compare --json`
 
 ## Why the LLM Wiki quality rules matter
 
@@ -61,7 +63,26 @@ Those rules live in:
 - `nlwflow doctor` — environment and path checks
 - `nlwflow init-config` — write a starter config file
 - `nlwflow plan-policy-compare` — emit a built-in Anthropic vs OpenAI policy-comparison source pack
+- `nlwflow run-policy-compare` — create a NotebookLM notebook, generate report/mind-map/Q&A, write wiki notes, and run qmd update
 - `nlwflow score-report REPORT.md` — score and extract high-signal sections from a NotebookLM report
+
+## Recommended development workflow
+
+This project should live in its own repository and still be editable by Hermes.
+That means:
+- Hermes works on the local folder directly
+- meaningful changes are committed in this repo
+- those commits are pushed to GitHub
+
+Recommended operating model:
+1. Develop locally in `/Users/moon/Desktop/notebooklm-llm-wiki-flow`
+2. Let Hermes edit and test in that folder
+3. Commit and push after each meaningful milestone
+
+Helpers:
+- `make test`
+- `make run-policy-compare`
+- `./scripts/publish.sh "feat: your message"`
 
 ## Intended end-state workflow
 
@@ -77,5 +98,5 @@ Those rules live in:
 
 - This repo assumes local-first execution.
 - NotebookLM authentication remains a browser login step.
-- The scaffold is ready for GitHub, but does not automatically publish your local work.
-- The next implementation step is to wire the full NotebookLM export + wiki write loop into the CLI.
+- The recommended sync model is not "commit on every save" but "commit and push on each stable milestone".
+- Hermes can keep reflecting changes locally while this repo remains the public distribution unit.

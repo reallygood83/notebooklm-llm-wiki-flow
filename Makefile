@@ -12,3 +12,9 @@ doctor:
 
 plan-policy-compare:
 	$(VENV)/bin/nlwflow plan-policy-compare --json
+
+run-policy-compare:
+	$(VENV)/bin/nlwflow run-policy-compare --json
+
+publish:
+	./scripts/publish.sh "$(MSG)"
