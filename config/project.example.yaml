@@ -1,3 +1,5 @@
+# NLWFLOW_* environment variables override values in this file.
+# Precedence: environment variables > project.yaml > .env > defaults.
 project_name: education-policy-research
 obsidian_vault: /ABSOLUTE/PATH/TO/VAULT
 wiki_path: /ABSOLUTE/PATH/TO/VAULT/LLM-Wiki

@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3.13}"
+INSTALL_QMD_GLOBAL="${INSTALL_QMD_GLOBAL:-1}"
 
 if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
   echo "Python 3.13+ not found. Set PYTHON_BIN or install python3.13."
@@ -23,14 +24,27 @@ fi
 "$ROOT/.venv/bin/pip" install -U pip
 "$ROOT/.venv/bin/pip" install -e "$ROOT[dev]"
 
-pipx install notebooklm-py --python "$PYTHON_BIN" || true
-pipx inject notebooklm-py playwright || true
+echo "Installing notebooklm-py via pipx..."
+pipx install notebooklm-py --python "$PYTHON_BIN"
+
+echo "Injecting Playwright into notebooklm-py environment..."
+pipx inject notebooklm-py playwright
+
 NOTEBOOKLM_VENV="$HOME/.local/pipx/venvs/notebooklm-py/bin/python"
-if [ -x "$NOTEBOOKLM_VENV" ]; then
-  "$NOTEBOOKLM_VENV" -m playwright install chromium || true
+if [ ! -x "$NOTEBOOKLM_VENV" ]; then
+  echo "NotebookLM pipx environment was not created as expected."
+  exit 1
 fi
 
-npm install -g @tobilu/qmd || true
+echo "Installing Chromium for notebooklm-py Playwright..."
+"$NOTEBOOKLM_VENV" -m playwright install chromium
+
+if [ "$INSTALL_QMD_GLOBAL" = "1" ]; then
+  echo "Installing qmd globally via npm..."
+  npm install -g @tobilu/qmd
+else
+  echo "Skipping optional global qmd install because INSTALL_QMD_GLOBAL=$INSTALL_QMD_GLOBAL"
+fi
 
 echo "Bootstrap complete. Next steps:"
 echo "  1. notebooklm login"
