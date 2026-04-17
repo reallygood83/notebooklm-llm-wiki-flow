@@ -31,12 +31,18 @@ def test_run_policy_compare_dry_run_returns_plan_payload():
     assert any("openai.com/enterprise-privacy" in url for url in payload["plan"]["sources"])
 
 
-def test_note_wiki_dry_run_returns_generated_plan_with_prompt_sources():
+def test_note_wiki_dry_run_returns_generated_plan_with_prompt_sources(tmp_path):
+    vault_path = tmp_path / "Vault"
+    vault_path.mkdir()
     result = CliRunner().invoke(
         app,
         [
             "note-wiki",
             "Summarize https://example.com/a for school admins",
+            "--vault",
+            str(vault_path),
+            "--wiki-path",
+            str(vault_path),
             "--dry-run",
             "--json",
         ],
