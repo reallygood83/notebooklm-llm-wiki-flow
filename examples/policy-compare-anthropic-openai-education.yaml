@@ -1,0 +1,15 @@
+title: Anthropic vs OpenAI policy comparison for education vertical AI
+sources:
+  - https://www.anthropic.com/legal/commercial-terms
+  - https://www.anthropic.com/legal/aup
+  - https://privacy.anthropic.com/en/articles/9957937-how-does-anthropic-use-submitted-feedback
+  - https://openai.com/policies/services-agreement/
+  - https://openai.com/policies/usage-policies/
+  - https://openai.com/business-data/
+  - https://openai.com/enterprise-privacy/
+report_append: >-
+  Compare Anthropic and OpenAI business policies with emphasis on education vertical AI,
+  student data, academic integrity, minors safety, human review, and admin controls.
+wiki_outputs:
+  comparison_slug: anthropic-vs-openai-education-vertical-ai-policy
+  checklist_slug: education-vertical-ai-policy-checklist

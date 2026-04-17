@@ -1,0 +1,16 @@
+project_name: education-policy-research
+obsidian_vault: /ABSOLUTE/PATH/TO/VAULT
+wiki_path: /ABSOLUTE/PATH/TO/VAULT/LLM-Wiki
+qmd_collection: learningmaster
+artifacts_root: ./artifacts
+notebooklm_command: notebooklm
+qmd_command: qmd
+prompts:
+  llm_wiki_priority: ./config/prompts/llm_wiki_priority.md
+  policy_compare: ./config/prompts/policy_compare.md
+workflow:
+  update_qmd_after_write: true
+  create_share_note: false
+  create_entity_pages: true
+  create_comparison_page: true
+  create_checklist_page: true
