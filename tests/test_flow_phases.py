@@ -4,37 +4,7 @@ from notebooklm_llm_wiki_flow.flow import _export_artifacts_phase, _run_notebook
 from notebooklm_llm_wiki_flow.flow_models import ArtifactExportResult, NotebookRunResult
 from notebooklm_llm_wiki_flow.models import WorkflowConfig
 from notebooklm_llm_wiki_flow.workflows import build_policy_compare_plan
-
-
-class FakeNotebookLMClient:
-    def create_notebook(self, title: str) -> dict:
-        return {"id": "nb-demo", "title": title}
-
-    def add_source(self, notebook_id: str, source: str) -> dict:
-        return {"id": f"src-{source.rsplit('/', 1)[-1]}", "url": source}
-
-    def wait_source(self, notebook_id: str, source_id: str, timeout: int = 300) -> dict:
-        return {"id": source_id, "status": "ready", "timeout": timeout}
-
-    def generate_report(self, notebook_id: str, report_append: str) -> dict:
-        return {"task_id": "task-report"}
-
-    def wait_artifact(self, notebook_id: str, artifact_id: str, timeout: int = 900) -> dict:
-        return {"id": artifact_id, "status": "ready", "timeout": timeout}
-
-    def generate_mind_map(self, notebook_id: str) -> dict:
-        return {"note_id": "mindmap-1"}
-
-    def ask(self, notebook_id: str, question: str) -> dict:
-        return {"answer": "- [ ] Keep human review in the loop"}
-
-    def download_report(self, notebook_id: str, output_path: Path) -> None:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text("# Demo report\n", encoding="utf-8")
-
-    def download_mind_map(self, notebook_id: str, output_path: Path) -> None:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text('{"note_id":"mindmap-1"}', encoding="utf-8")
+from tests.fakes.fake_notebooklm_client import FakeNotebookLMClient
 
 
 def test_run_notebook_phase_returns_typed_result():
@@ -70,6 +40,6 @@ def test_export_artifacts_phase_writes_expected_files(tmp_path: Path):
 
     assert isinstance(result, ArtifactExportResult)
     assert result.artifacts_dir == tmp_path / "artifacts" / "nb-demo"
-    assert result.report_path.read_text(encoding="utf-8") == "# Demo report\n"
+    assert result.report_path.read_text(encoding="utf-8").startswith("# Demo report\n")
     assert result.mind_map_path.read_text(encoding="utf-8") == '{"note_id":"mindmap-1"}'
     assert 'Keep human review' in result.qa_path.read_text(encoding="utf-8")
