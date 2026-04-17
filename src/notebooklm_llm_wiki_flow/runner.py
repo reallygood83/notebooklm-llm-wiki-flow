@@ -1,44 +1,72 @@
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
+import time
 from pathlib import Path
 
 from .notebooklm_client import JSONDict, NotebookLMCommandError, NotebookLMTimeoutError
 
+logger = logging.getLogger(__name__)
+
 
 class NotebookLMRunner:
-    def __init__(self, command: str = 'notebooklm') -> None:
+    def __init__(
+        self,
+        command: str = 'notebooklm',
+        *,
+        max_retries: int = 0,
+        retry_backoff_seconds: float = 1.0,
+    ) -> None:
+        if max_retries < 0:
+            raise ValueError("max_retries must be >= 0")
         self.command = command
+        self.max_retries = max_retries
+        self.retry_backoff_seconds = retry_backoff_seconds
 
     def _command(self, *args: str) -> list[str]:
         return [self.command, *args]
 
     def _run(self, step: str, *args: str, timeout_seconds: int | None = None) -> str:
         command = self._command(*args)
-        try:
-            result = subprocess.run(
-                command,
-                check=True,
-                text=True,
-                capture_output=True,
-                timeout=timeout_seconds,
-            )
-        except subprocess.CalledProcessError as exc:
-            raise NotebookLMCommandError(
-                step=step,
-                command=list(exc.cmd) if isinstance(exc.cmd, (list, tuple)) else command,
-                stderr=(exc.stderr or '').strip(),
-                stdout=(exc.stdout or '').strip(),
-                returncode=exc.returncode,
-            ) from exc
-        except subprocess.TimeoutExpired as exc:
-            raise NotebookLMTimeoutError(
-                step=step,
-                command=list(exc.cmd) if isinstance(exc.cmd, (list, tuple)) else command,
-                timeout_seconds=int(exc.timeout) if exc.timeout is not None else None,
-            ) from exc
-        return result.stdout.strip()
+        attempts = self.max_retries + 1
+        last_error: Exception | None = None
+        for attempt in range(1, attempts + 1):
+            try:
+                result = subprocess.run(
+                    command,
+                    check=True,
+                    text=True,
+                    capture_output=True,
+                    timeout=timeout_seconds,
+                )
+                return result.stdout.strip()
+            except subprocess.CalledProcessError as exc:
+                last_error = NotebookLMCommandError(
+                    step=step,
+                    command=list(exc.cmd) if isinstance(exc.cmd, (list, tuple)) else command,
+                    stderr=(exc.stderr or '').strip(),
+                    stdout=(exc.stdout or '').strip(),
+                    returncode=exc.returncode,
+                )
+            except subprocess.TimeoutExpired as exc:
+                last_error = NotebookLMTimeoutError(
+                    step=step,
+                    command=list(exc.cmd) if isinstance(exc.cmd, (list, tuple)) else command,
+                    timeout_seconds=int(exc.timeout) if exc.timeout is not None else None,
+                )
+            if attempt < attempts:
+                logger.warning(
+                    "notebooklm step '%s' failed on attempt %d/%d; retrying in %.1fs",
+                    step,
+                    attempt,
+                    attempts,
+                    self.retry_backoff_seconds,
+                )
+                time.sleep(self.retry_backoff_seconds)
+        assert last_error is not None
+        raise last_error
 
     def _run_json(self, step: str, *args: str, timeout_seconds: int | None = None) -> JSONDict:
         command = self._command(*args)

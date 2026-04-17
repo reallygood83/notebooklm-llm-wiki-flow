@@ -56,6 +56,26 @@ def test_notebooklm_runner_wraps_invalid_json_with_step_context(monkeypatch: pyt
     assert "not-json" in error.stdout
 
 
+def test_notebooklm_runner_retries_transient_failures_when_opted_in(monkeypatch: pytest.MonkeyPatch):
+    call_count = {"n": 0}
+    success_stdout = '{"notebook": {"id": "nb-retry"}}'
+
+    def fake_run(*args, **kwargs):
+        call_count["n"] += 1
+        if call_count["n"] == 1:
+            raise subprocess.CalledProcessError(1, args[0], stderr="transient")
+        return subprocess.CompletedProcess(args[0], 0, stdout=success_stdout, stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr("notebooklm_llm_wiki_flow.runner.time.sleep", lambda _s: None)
+    runner = NotebookLMRunner("notebooklm", max_retries=2, retry_backoff_seconds=0)
+
+    result = runner.create_notebook("Demo")
+
+    assert result == {"id": "nb-retry"}
+    assert call_count["n"] == 2
+
+
 def test_notebooklm_runner_wraps_timeout_with_step_context(monkeypatch: pytest.MonkeyPatch):
     def fake_run(*args, **kwargs):
         raise subprocess.TimeoutExpired(args[0], kwargs["timeout"])
