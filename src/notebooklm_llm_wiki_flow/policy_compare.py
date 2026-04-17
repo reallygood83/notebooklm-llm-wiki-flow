@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import logging
 import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable
 
-from .models import ComparisonDraft
+from .models import ComparisonDraft, ReportHighlights
 from .report_parser import extract_report_highlights
 from .template_renderer import render_entity_template
+
+logger = logging.getLogger(__name__)
 
 
 def extract_core_policy_table_rows(report_markdown: str) -> list[tuple[str, str, str]]:
@@ -67,6 +70,27 @@ def extract_checklist_items(qa_answer: str, report_markdown: str, max_items: int
     return items[:max_items]
 
 
+def _fallback_key_differences(highlights: ReportHighlights) -> list[tuple[str, str, str, str]]:
+    key_differences: list[tuple[str, str, str, str]] = []
+    for bullet in highlights.bullets:
+        cleaned = bullet.strip().lstrip("-* ")
+        if ":" not in cleaned:
+            continue
+        label, detail = cleaned.split(":", 1)
+        owner = label.strip()
+        description = detail.strip()
+        if not description:
+            continue
+        implication = "표 형식 비교가 없어 bullet 기반 fallback 요약을 사용"
+        if "openai" in owner.lower():
+            key_differences.append(("fallback", "", f"OpenAI: {description}", implication))
+        elif "anthropic" in owner.lower():
+            key_differences.append(("fallback", f"Anthropic: {description}", "", implication))
+        if len(key_differences) >= 6:
+            break
+    return key_differences
+
+
 def build_comparison_draft(report_markdown: str, qa_answer: str, title: str = "Anthropic vs OpenAI policy comparison for education vertical AI") -> ComparisonDraft:
     rows = extract_core_policy_table_rows(report_markdown)
     highlights = extract_report_highlights(report_markdown)
@@ -76,6 +100,10 @@ def build_comparison_draft(report_markdown: str, qa_answer: str, title: str = "A
     for feature, openai, anthropic in rows[:6]:
         implication = "교육 AI 정책 문서와 제품 제어 항목에 즉시 반영"
         key_differences.append((feature, anthropic, openai, implication))
+
+    if not key_differences:
+        logger.warning("Falling back to bullet-based comparison draft because no policy comparison table rows were parsed.")
+        key_differences = _fallback_key_differences(highlights)
 
     summary_lines = [
         "NotebookLM report와 Q&A를 바탕으로 생성한 정책 비교 초안이다.",

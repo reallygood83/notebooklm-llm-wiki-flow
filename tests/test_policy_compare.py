@@ -1,4 +1,5 @@
 from notebooklm_llm_wiki_flow.policy_compare import (
+    build_comparison_draft,
     extract_checklist_items,
     extract_core_policy_table_rows,
 )
@@ -30,6 +31,17 @@ QA = """### Policy Checklist for an Education Vertical AI Company
 *   [ ] Require human review for grading decisions
 """
 
+REPORT_WITHOUT_TABLE = """# Provider Policy Notes
+
+## Data Ownership
+- OpenAI: Customer retains ownership of inputs and outputs.
+- Anthropic: Customer retains rights and receives assignment for outputs.
+
+## Retention
+- OpenAI: configurable retention controls for enterprise.
+- Anthropic: standard API data can be deleted within 30 days.
+"""
+
 
 def test_extract_core_policy_table_rows_reads_markdown_table():
     rows = extract_core_policy_table_rows(REPORT)
@@ -53,3 +65,14 @@ def test_extract_checklist_items_prefers_checkbox_list_then_falls_back_to_number
     assert all("**" not in item for item in qa_items)
     assert any("student privacy agreement" in item.lower() for item in report_items)
     assert any("grading and admissions" in item.lower() for item in report_items)
+
+
+def test_build_comparison_draft_falls_back_when_report_has_no_table(caplog):
+    caplog.set_level("WARNING")
+
+    draft = build_comparison_draft(REPORT_WITHOUT_TABLE, QA, title="Fallback draft")
+
+    assert draft.title == "Fallback draft"
+    assert draft.key_differences
+    assert any("OpenAI" in difference[2] or "Anthropic" in difference[1] for difference in draft.key_differences)
+    assert any("falling back" in message.lower() for message in caplog.messages)
