@@ -2,11 +2,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PYTHON_BIN="${PYTHON_BIN:-python3.13}"
+PYTHON_BIN="${PYTHON_BIN:-python3.11}"
 INSTALL_QMD_GLOBAL="${INSTALL_QMD_GLOBAL:-1}"
 
 if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
-  echo "Python 3.13+ not found. Set PYTHON_BIN or install python3.13."
+  echo "Python 3.11+ not found. Set PYTHON_BIN or install python3.11."
   exit 1
 fi
 
