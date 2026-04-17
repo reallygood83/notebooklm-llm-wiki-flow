@@ -66,7 +66,7 @@ def extract_checklist_items(qa_answer: str, report_markdown: str, max_items: int
     return items[:max_items]
 
 
-def build_comparison_draft(report_markdown: str, qa_answer: str) -> ComparisonDraft:
+def build_comparison_draft(report_markdown: str, qa_answer: str, title: str = "Anthropic vs OpenAI policy comparison for education vertical AI") -> ComparisonDraft:
     rows = extract_core_policy_table_rows(report_markdown)
     highlights = extract_report_highlights(report_markdown)
     checklist = extract_checklist_items(qa_answer, report_markdown)
@@ -84,7 +84,7 @@ def build_comparison_draft(report_markdown: str, qa_answer: str) -> ComparisonDr
         summary_lines.append("핵심 하이라이트: " + "; ".join(highlights.bullets[:3]))
 
     return ComparisonDraft(
-        title="Anthropic vs OpenAI policy comparison for education vertical AI",
+        title=title,
         summary=" ".join(summary_lines),
         key_differences=key_differences,
         checklist=checklist,
@@ -100,10 +100,10 @@ def _yaml_list_lines(key: str, values: list[str]) -> list[str]:
     return lines
 
 
-def render_checklist_note(checklist: Iterable[str], sources: list[str], source_urls: list[str], created: str) -> str:
+def render_checklist_note(checklist: Iterable[str], sources: list[str], source_urls: list[str], created: str, title: str = "Education vertical AI policy checklist") -> str:
     body = [
         "---",
-        "title: Education vertical AI policy checklist",
+        f"title: {title}",
         f"created: {created}",
         f"updated: {created}",
         "type: query",
@@ -114,7 +114,7 @@ def render_checklist_note(checklist: Iterable[str], sources: list[str], source_u
     body.extend([
         "---",
         "",
-        "# Education vertical AI policy checklist",
+        f"# {title}",
         "",
         "## Checklist",
     ])

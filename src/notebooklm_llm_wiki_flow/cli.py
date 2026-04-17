@@ -8,7 +8,7 @@ import typer
 from rich import print
 
 from .config import load_config
-from .flow import run_policy_compare
+from .flow import run_from_yaml, run_policy_compare
 from .obsidian_kit import install_obsidian_kit
 from .report_parser import extract_report_highlights
 from .workflows import build_policy_compare_plan
@@ -63,6 +63,22 @@ def plan_policy_compare(json_output: bool = typer.Option(False, '--json', help='
     print("Sources:")
     for source in plan['sources']:
         print(f"- {source}")
+
+
+@app.command('run-from-yaml')
+def run_from_yaml_command(
+    workflow_path: Path,
+    config: str | None = typer.Option(None, help="Optional config file"),
+    dry_run: bool = typer.Option(False, '--dry-run', help='Print the loaded workflow without executing NotebookLM'),
+    json_output: bool = typer.Option(False, '--json', help='Emit JSON'),
+    no_qmd_update: bool = typer.Option(False, '--no-qmd-update', help='Skip qmd update after writing notes'),
+) -> None:
+    payload = run_from_yaml(workflow_path, config, dry_run=dry_run, qmd_update_enabled=not no_qmd_update)
+    if json_output:
+        typer.echo(json.dumps(payload, ensure_ascii=False))
+        raise typer.Exit()
+
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
 
 
 @app.command('run-policy-compare')

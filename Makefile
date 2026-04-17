@@ -16,5 +16,8 @@ plan-policy-compare:
 run-policy-compare:
 	$(VENV)/bin/nlwflow run-policy-compare --json
 
+run-from-yaml:
+	$(VENV)/bin/nlwflow run-from-yaml $(WORKFLOW) --json
+
 publish:
 	./scripts/publish.sh "$(MSG)"

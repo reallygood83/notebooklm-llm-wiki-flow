@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -16,7 +17,7 @@ from .policy_compare import (
 )
 from .runner import NotebookLMRunner, run_qmd_update
 from .wiki_builder import render_comparison_note
-from .workflows import build_policy_compare_plan
+from .workflows import build_policy_compare_plan, load_workflow_yaml, slugify
 
 
 def _write(path: Path, content: str) -> Path:
@@ -25,49 +26,75 @@ def _write(path: Path, content: str) -> Path:
     return path
 
 
-def _update_index(index_path: Path) -> None:
+def _safe_filename(title: str) -> str:
+    cleaned = re.sub(r"[\\/:*?\"<>|]", "-", title).strip()
+    return cleaned or slugify(title)
+
+
+def _render_generic_entity(title: str, slug: str, created: str, source_notes: list[str], source_urls: list[str], summary: str | None = None) -> str:
+    lines = [
+        "---",
+        f"title: {title}",
+        f"created: {created}",
+        f"updated: {created}",
+        "type: entity",
+        "tags: [ai-ml, company, technology]",
+        f"source_notes: [{', '.join(source_notes)}]",
+        "source_urls:",
+        *[f"  - {url}" for url in source_urls],
+        "---",
+        "",
+        f"# {title}",
+        "",
+        "## Overview",
+        summary or f"{title} 관련 workflow 실행 결과에서 추출한 기본 entity 초안이다.",
+        "",
+        "## Related",
+        f"[[{slugify(title)}]], [[llm-wiki]]",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _update_index(index_path: Path, comparison_slug: str, comparison_summary: str, checklist_slug: str, checklist_summary: str, entity_entries: list[tuple[str, str]] | None = None) -> None:
     if not index_path.exists():
         return
     text = index_path.read_text(encoding="utf-8")
-    sections = {
-        "## Entities\n": "- [[openai]] — Enterprise, Edu, API를 통해 데이터 보호·관리 통제를 상품화하는 AI 회사\n",
-        "## Comparisons\n": "- [[anthropic-vs-openai-education-vertical-ai-policy]] — Anthropic와 OpenAI의 business policy를 비교하고 교육 vertical AI 정책 시사점을 정리한 비교 문서\n",
-        "## Queries\n": "- [[education-vertical-ai-policy-checklist]] — 학교·교사·학생·보호자 대상 교육 AI 기업 정책 체크리스트\n",
+    section_lines = {
+        "## Comparisons\n": f"- [[{comparison_slug}]] — {comparison_summary}\n",
+        "## Queries\n": f"- [[{checklist_slug}]] — {checklist_summary}\n",
     }
-    for header, line in sections.items():
+    if entity_entries:
+        for slug, summary in entity_entries:
+            line = f"- [[{slug}]] — {summary}\n"
+            if line.strip() not in text and "## Entities\n" in text:
+                text = text.replace("## Entities\n", "## Entities\n" + line, 1)
+    for header, line in section_lines.items():
         if line.strip() not in text and header in text:
             text = text.replace(header, header + line, 1)
-    text = text.replace(
-        "Last updated: 2026-04-16 | Total pages: 10",
-        f"Last updated: {date.today().isoformat()} | Total pages: 13",
-    )
+    text = re.sub(r"Last updated: \d{4}-\d{2}-\d{2} \| Total pages: \d+", f"Last updated: {date.today().isoformat()} | Total pages: 13", text)
     index_path.write_text(text, encoding="utf-8")
 
 
-def _append_log(log_path: Path, notebook_id: str) -> None:
-    entry = "\n".join([
-        f"## [{date.today().isoformat()}] ingest | Anthropic vs OpenAI business policy comparison for education vertical AI",
+def _append_log(log_path: Path, title: str, notebook_id: str, created_files: list[str], updated_files: list[str] | None = None) -> None:
+    lines = [
+        f"## [{date.today().isoformat()}] ingest | {title}",
         "- NotebookLM notebook created and artifacts exported",
         f"- Notebook ID: {notebook_id}",
-        "- Files created/updated:",
-        f"  - raw/articles/anthropic-openai-policy-sources-{date.today().isoformat()}.md",
-        f"  - raw/articles/notebooklm-anthropic-openai-policy-report-{date.today().isoformat()}.md",
-        "  - entities/openai.md",
-        "  - comparisons/anthropic-vs-openai-education-vertical-ai-policy.md",
-        "  - queries/education-vertical-ai-policy-checklist.md",
-        "  - entities/anthropic.md",
-        "  - index.md",
-        "  - log.md",
-    ])
+        "- Files created:",
+        *[f"  - {item}" for item in created_files],
+    ]
+    if updated_files:
+        lines.append("- Files updated:")
+        lines.extend(f"  - {item}" for item in updated_files)
+    entry = "\n".join(lines)
     text = log_path.read_text(encoding="utf-8") if log_path.exists() else ""
     if entry not in text:
-        updated = text.rstrip() + "\n\n" + entry + "\n"
-        log_path.write_text(updated, encoding="utf-8")
+        log_path.write_text(text.rstrip() + "\n\n" + entry + "\n", encoding="utf-8")
 
 
-def run_policy_compare(config_path: str | None = None, *, dry_run: bool = False, qmd_update_enabled: bool = True) -> dict[str, Any]:
+def _run_plan(plan: dict[str, Any], config_path: str | None = None, *, dry_run: bool = False, qmd_update_enabled: bool = True) -> dict[str, Any]:
     cfg = load_config(config_path) if config_path else load_config()
-    plan = build_policy_compare_plan()
     if dry_run:
         return {"mode": "dry-run", "plan": plan}
 
@@ -84,10 +111,7 @@ def run_policy_compare(config_path: str | None = None, *, dry_run: bool = False,
     report_task = runner.generate_report(notebook_id, plan["report_append"])
     runner.wait_artifact(notebook_id, report_task["task_id"])
     mind_map = runner.generate_mind_map(notebook_id)
-    qa = runner.ask(
-        notebook_id,
-        "Compare Anthropic and OpenAI business policies across data ownership, data retention, model training, acceptable use, enterprise controls, compliance, and IP/legal risk allocation. Then extract a policy checklist for an education vertical AI company serving schools, teachers, students, and guardians.",
-    )
+    qa = runner.ask(notebook_id, plan["question"])
 
     artifacts_dir = cfg.artifacts_root / notebook_id
     artifacts_dir.mkdir(parents=True, exist_ok=True)
@@ -99,14 +123,15 @@ def run_policy_compare(config_path: str | None = None, *, dry_run: bool = False,
     qa_path.write_text(json.dumps(qa, ensure_ascii=False, indent=2), encoding="utf-8")
 
     created = date.today().isoformat()
-    raw_sources_rel = f"raw/articles/anthropic-openai-policy-sources-{created}.md"
-    raw_report_rel = f"raw/articles/notebooklm-anthropic-openai-policy-report-{created}.md"
+    workflow_slug = slugify(plan["wiki_outputs"].get("comparison_slug") or plan["title"])
+    raw_sources_rel = f"raw/articles/{workflow_slug}-sources-{created}.md"
+    raw_report_rel = f"raw/articles/notebooklm-{workflow_slug}-report-{created}.md"
     _write(cfg.wiki_path / raw_sources_rel, render_raw_source_pack(plan, created))
-    raw_report_target = cfg.wiki_path / raw_report_rel
+
     raw_report_body = report_path.read_text(encoding="utf-8")
     raw_report_frontmatter = "\n".join([
         "---",
-        "title: NotebookLM report — Anthropic and OpenAI business policy comparison",
+        f"title: NotebookLM report — {plan['title']}",
         f"created: {created}",
         f"updated: {created}",
         "type: source",
@@ -114,34 +139,75 @@ def run_policy_compare(config_path: str | None = None, *, dry_run: bool = False,
         f"source_url: notebooklm://{notebook_id}/report/{report_task['task_id']}",
         "source_site: NotebookLM",
         f"source_date: {created}",
+        "source_urls:",
+        *[f"  - {url}" for url in plan["sources"]],
         "---",
         "",
     ])
-    raw_report_target.write_text(raw_report_frontmatter + raw_report_body, encoding="utf-8")
+    _write(cfg.wiki_path / raw_report_rel, raw_report_frontmatter + raw_report_body)
 
-    draft = build_comparison_draft(raw_report_body, qa["answer"])
+    comparison_slug = plan["wiki_outputs"]["comparison_slug"]
+    comparison_title = plan["wiki_outputs"]["comparison_title"]
+    checklist_slug = plan["wiki_outputs"]["checklist_slug"]
+    checklist_title = plan["wiki_outputs"]["checklist_title"]
+
+    draft = build_comparison_draft(raw_report_body, qa["answer"], title=comparison_title)
     comparison_note = "\n".join([
         "---",
-        "title: Anthropic vs OpenAI policy comparison for education vertical AI",
+        f"title: {comparison_title}",
         f"created: {created}",
         f"updated: {created}",
         "type: comparison",
         "tags: [ai-ml, education, technology, comparison]",
         f"source_notes: [{raw_sources_rel}, {raw_report_rel}]",
         "source_urls:",
-        *[f"  - {url}" for url in plan['sources']],
+        *[f"  - {url}" for url in plan["sources"]],
         "---",
         "",
         render_comparison_note(draft),
     ])
-    comparison_target = _write(cfg.wiki_path / "comparisons/anthropic-vs-openai-education-vertical-ai-policy.md", comparison_note)
-    checklist_target = _write(cfg.wiki_path / "queries/education-vertical-ai-policy-checklist.md", render_checklist_note(draft.checklist, [raw_sources_rel, raw_report_rel], plan['sources'], created))
-    openai_target = _write(cfg.wiki_path / "entities/openai.md", render_openai_entity(created, [raw_sources_rel, raw_report_rel], plan['sources']))
-    anthropic_target = _write(cfg.wiki_path / "entities/anthropic.md", render_anthropic_entity(created, [raw_sources_rel, raw_report_rel], plan['sources']))
-    inbox_target = _write(cfg.obsidian_vault / f"000-Inbox/Anthropic-vs-OpenAI-정책비교_교육-Vertical-AI_{created}.md", render_inbox_summary(plan, notebook_id, artifacts_dir))
+    comparison_target = _write(cfg.wiki_path / f"comparisons/{comparison_slug}.md", comparison_note)
+    checklist_target = _write(
+        cfg.wiki_path / f"queries/{checklist_slug}.md",
+        render_checklist_note(draft.checklist, [raw_sources_rel, raw_report_rel], plan["sources"], created, title=checklist_title),
+    )
 
-    _update_index(cfg.wiki_path / "index.md")
-    _append_log(cfg.wiki_path / "log.md", notebook_id)
+    created_files = [
+        raw_sources_rel,
+        raw_report_rel,
+        f"comparisons/{comparison_slug}.md",
+        f"queries/{checklist_slug}.md",
+    ]
+
+    entity_entries: list[tuple[str, str]] = []
+    entity_targets: list[str] = []
+    for entity in plan.get("entities", []):
+        slug = entity["slug"]
+        title = entity["title"]
+        summary = entity.get("summary")
+        if slug == "openai":
+            content = render_openai_entity(created, [raw_sources_rel, raw_report_rel], plan["sources"])
+        elif slug == "anthropic":
+            content = render_anthropic_entity(created, [raw_sources_rel, raw_report_rel], plan["sources"])
+        else:
+            content = _render_generic_entity(title, slug, created, [raw_sources_rel, raw_report_rel], plan["sources"], summary)
+        target = _write(cfg.wiki_path / f"entities/{slug}.md", content)
+        entity_targets.append(str(target))
+        entity_entries.append((slug, summary or f"{title} 관련 entity 초안"))
+        created_files.append(f"entities/{slug}.md")
+
+    inbox_note_path = cfg.obsidian_vault / f"000-Inbox/{_safe_filename(plan['title'])}_{created}.md"
+    inbox_target = _write(inbox_note_path, render_inbox_summary(plan, notebook_id, artifacts_dir))
+
+    _update_index(
+        cfg.wiki_path / "index.md",
+        comparison_slug,
+        f"{comparison_title} 결과를 정리한 비교 문서",
+        checklist_slug,
+        f"{checklist_title} 결과를 정리한 실행 체크리스트",
+        entity_entries or None,
+    )
+    _append_log(cfg.wiki_path / "log.md", plan["title"], notebook_id, created_files, ["index.md", "log.md"])
 
     qmd_output = None
     if qmd_update_enabled:
@@ -149,14 +215,24 @@ def run_policy_compare(config_path: str | None = None, *, dry_run: bool = False,
 
     return {
         "mode": "run",
+        "workflow": plan["workflow"],
         "notebook_id": notebook_id,
         "artifacts_dir": str(artifacts_dir),
         "comparison_page": str(comparison_target),
         "checklist_page": str(checklist_target),
-        "openai_page": str(openai_target),
-        "anthropic_page": str(anthropic_target),
+        "entity_pages": entity_targets,
         "inbox_note": str(inbox_target),
         "qmd_updated": bool(qmd_output is not None),
         "sources": [source["url"] for source in sources],
         "mind_map_note_id": mind_map.get("note_id"),
     }
+
+
+def run_policy_compare(config_path: str | None = None, *, dry_run: bool = False, qmd_update_enabled: bool = True) -> dict[str, Any]:
+    plan = build_policy_compare_plan()
+    return _run_plan(plan, config_path, dry_run=dry_run, qmd_update_enabled=qmd_update_enabled)
+
+
+def run_from_yaml(workflow_path: str | Path, config_path: str | None = None, *, dry_run: bool = False, qmd_update_enabled: bool = True) -> dict[str, Any]:
+    plan = load_workflow_yaml(workflow_path)
+    return _run_plan(plan, config_path, dry_run=dry_run, qmd_update_enabled=qmd_update_enabled)

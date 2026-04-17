@@ -41,6 +41,7 @@ This repository is designed for people who want:
 5. Run `./.venv/bin/nlwflow doctor --json`
 6. Run `./.venv/bin/nlwflow install-obsidian-kit --vault /path/to/vault`
 7. Run `./.venv/bin/nlwflow run-policy-compare --json`
+8. Or run a reusable YAML-defined workflow with `./.venv/bin/nlwflow run-from-yaml examples/policy-compare-anthropic-openai-education.yaml --json`
 
 ## Why the LLM Wiki quality rules matter
 
@@ -65,6 +66,7 @@ Those rules live in:
 - `nlwflow init-config` — write a starter config file
 - `nlwflow plan-policy-compare` — emit a built-in Anthropic vs OpenAI policy-comparison source pack
 - `nlwflow run-policy-compare` — create a NotebookLM notebook, generate report/mind-map/Q&A, write wiki notes, and run qmd update
+- `nlwflow run-from-yaml WORKFLOW.yaml` — execute the same pipeline from a reusable YAML workflow definition instead of a hardcoded built-in source pack
 - `nlwflow install-obsidian-kit` — install an Obsidian-compatible starter kit for users who do not already use Hermes obsidian skills
 - `nlwflow score-report REPORT.md` — score and extract high-signal sections from a NotebookLM report
 
@@ -84,6 +86,7 @@ Recommended operating model:
 Helpers:
 - `make test`
 - `make run-policy-compare`
+- `make run-from-yaml WORKFLOW=examples/policy-compare-anthropic-openai-education.yaml`
 - `./scripts/publish.sh "feat: your message"`
 
 ## Intended end-state workflow

@@ -10,6 +10,18 @@ sources:
 report_append: >-
   Compare Anthropic and OpenAI business policies with emphasis on education vertical AI,
   student data, academic integrity, minors safety, human review, and admin controls.
+question: >-
+  What are the most important similarities, differences, and implementation takeaways
+  from these sources? Produce an actionable checklist for an education vertical AI company.
 wiki_outputs:
   comparison_slug: anthropic-vs-openai-education-vertical-ai-policy
+  comparison_title: Anthropic vs OpenAI policy comparison for education vertical AI
   checklist_slug: education-vertical-ai-policy-checklist
+  checklist_title: Education vertical AI policy checklist
+entities:
+  - slug: anthropic
+    title: Anthropic
+    summary: Anthropic policy entity generated from workflow
+  - slug: openai
+    title: OpenAI
+    summary: OpenAI policy entity generated from workflow
