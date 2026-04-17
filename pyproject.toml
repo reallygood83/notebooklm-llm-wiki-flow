@@ -29,6 +29,10 @@ dev = [
   "types-PyYAML>=6.0.12.20250516",
   "pre-commit>=4.2.0",
 ]
+notebooklm = [
+  "notebooklm-py",
+  "playwright>=1.40",
+]
 
 [project.scripts]
 nlwflow = "notebooklm_llm_wiki_flow.cli:app"

@@ -89,11 +89,52 @@ Core features
 
 ===
 
+Prerequisites
+
+- Python 3.11+
+- Node.js 20+ and npm (for the qmd indexer; skip with `INSTALL_QMD_GLOBAL=0`)
+- pipx (optional — only needed for the isolated `USE_PIPX=1` path)
+
+===
+
+Install paths — two options
+
+`notebooklm-py` now installs automatically through the `[notebooklm]` extra.
+
+**A. One-shot install (recommended) — `./scripts/bootstrap.sh`**
+
+This does everything for you:
+
+1. Creates `.venv` and editable-installs this project
+2. `pip install -e ".[dev,notebooklm]"` — nlwflow + **notebooklm-py** + Playwright all inside the venv
+3. `python -m playwright install chromium`
+4. `npm install -g @tobilu/qmd` (optional)
+
+**B. Install directly with pip**
+
+```bash
+python3.11 -m venv .venv
+./.venv/bin/pip install -e ".[notebooklm]"
+./.venv/bin/python -m playwright install chromium
+# qmd separately: npm install -g @tobilu/qmd
+```
+
+**C. Prefer isolation (legacy)**
+
+```bash
+USE_PIPX=1 ./scripts/bootstrap.sh
+```
+
+With this path, `notebooklm-py` is installed into a separate pipx environment
+at `~/.local/pipx/venvs/notebooklm-py/`, outside this project's venv.
+
+===
+
 Quick start
 
 1. Clone the repository
 2. Run `./scripts/bootstrap.sh`
-3. Run `notebooklm login`
+3. Run `notebooklm login` — one-time browser login
 4. Run `./.venv/bin/nlwflow init-config`
 5. Run `./.venv/bin/nlwflow doctor --json`
 6. Optionally install the starter kit

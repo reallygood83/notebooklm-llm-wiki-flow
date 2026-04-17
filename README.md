@@ -89,11 +89,51 @@ LLM Wiki 는 LLM 출력 전체를 저장하는 곳이 아닙니다.
 
 ===
 
+사전 요구사항
+
+- Python 3.11+
+- Node.js 20+ 와 npm (qmd 인덱서용, `INSTALL_QMD_GLOBAL=0` 으로 건너뛸 수 있음)
+- pipx (옵션 — `USE_PIPX=1` 모드로 격리 설치할 때만 필요)
+
+===
+
+설치 방법 — 두 가지 경로
+
+notebooklm-py 는 이제 `[notebooklm]` extra 로 자동 설치됩니다.
+
+**A. 한 줄 설치 (권장) — `./scripts/bootstrap.sh`**
+
+아래를 자동으로 다 해줍니다.
+
+1. `.venv` 생성 + 이 프로젝트 editable 설치
+2. `pip install -e ".[dev,notebooklm]"` — nlwflow + **notebooklm-py** + Playwright 모두 venv 안에
+3. `python -m playwright install chromium`
+4. `npm install -g @tobilu/qmd` (옵션)
+
+**B. 직접 pip 로 설치**
+
+```bash
+python3.11 -m venv .venv
+./.venv/bin/pip install -e ".[notebooklm]"
+./.venv/bin/python -m playwright install chromium
+# qmd 는 별도: npm install -g @tobilu/qmd
+```
+
+**C. 격리 설치를 원한다면 (예전 방식)**
+
+```bash
+USE_PIPX=1 ./scripts/bootstrap.sh
+```
+
+이 경우 `notebooklm-py` 는 pipx 로 `~/.local/pipx/venvs/notebooklm-py/` 에 별도 격리됩니다.
+
+===
+
 빠른 시작
 
 1. 저장소 클론
 2. `./scripts/bootstrap.sh`
-3. `notebooklm login`
+3. `notebooklm login` — 브라우저 로그인 1회
 4. `./.venv/bin/nlwflow init-config`
 5. `./.venv/bin/nlwflow doctor --json`
 6. 필요하면 starter kit 설치
