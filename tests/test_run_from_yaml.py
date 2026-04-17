@@ -4,7 +4,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from notebooklm_llm_wiki_flow.cli import app
-from notebooklm_llm_wiki_flow.workflows import load_workflow_yaml
+from notebooklm_llm_wiki_flow.workflows import build_note_wiki_plan, load_workflow_yaml
 
 
 def test_load_workflow_yaml_reads_custom_titles_and_sources(tmp_path: Path):
@@ -56,3 +56,14 @@ def test_run_from_yaml_dry_run_returns_yaml_plan(tmp_path: Path):
     assert payload["mode"] == "dry-run"
     assert payload["plan"]["title"] == "Custom Education Policy Comparison"
     assert payload["plan"]["wiki_outputs"]["comparison_slug"] == "custom-policy-comparison"
+
+
+def test_build_note_wiki_plan_extracts_urls_and_builds_note_outputs():
+    plan = build_note_wiki_plan(
+        "Summarize these sources for teachers https://example.com/a https://example.com/b",
+    )
+
+    assert plan["workflow"] == "note-wiki"
+    assert plan["sources"] == ["https://example.com/a", "https://example.com/b"]
+    assert plan["wiki_outputs"]["comparison_slug"].startswith("note-wiki-")
+    assert "teachers" in plan["title"].lower()

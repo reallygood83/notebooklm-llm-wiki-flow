@@ -324,11 +324,12 @@ def _run_plan(
     plan: dict[str, Any],
     config_path: str | None = None,
     *,
+    cfg_override: WorkflowConfig | None = None,
     dry_run: bool = False,
     qmd_update_enabled: bool = True,
     client: NotebookLMClient | None = None,
 ) -> dict[str, Any]:
-    cfg = load_config(config_path) if config_path else load_config()
+    cfg = cfg_override or (load_config(config_path) if config_path else load_config())
     if dry_run:
         return {"mode": "dry-run", "plan": plan}
 
@@ -359,24 +360,45 @@ def _run_plan(
     }
 
 
+def run_plan(
+    plan: dict[str, Any],
+    config_path: str | None = None,
+    *,
+    cfg_override: WorkflowConfig | None = None,
+    dry_run: bool = False,
+    qmd_update_enabled: bool = True,
+    client: NotebookLMClient | None = None,
+) -> dict[str, Any]:
+    return _run_plan(
+        plan,
+        config_path,
+        cfg_override=cfg_override,
+        dry_run=dry_run,
+        qmd_update_enabled=qmd_update_enabled,
+        client=client,
+    )
+
+
 def run_policy_compare(
     config_path: str | None = None,
     *,
+    cfg_override: WorkflowConfig | None = None,
     dry_run: bool = False,
     qmd_update_enabled: bool = True,
     client: NotebookLMClient | None = None,
 ) -> dict[str, Any]:
     plan = build_policy_compare_plan()
-    return _run_plan(plan, config_path, dry_run=dry_run, qmd_update_enabled=qmd_update_enabled, client=client)
+    return _run_plan(plan, config_path, cfg_override=cfg_override, dry_run=dry_run, qmd_update_enabled=qmd_update_enabled, client=client)
 
 
 def run_from_yaml(
     workflow_path: str | Path,
     config_path: str | None = None,
     *,
+    cfg_override: WorkflowConfig | None = None,
     dry_run: bool = False,
     qmd_update_enabled: bool = True,
     client: NotebookLMClient | None = None,
 ) -> dict[str, Any]:
     plan = load_workflow_yaml(workflow_path)
-    return _run_plan(plan, config_path, dry_run=dry_run, qmd_update_enabled=qmd_update_enabled, client=client)
+    return _run_plan(plan, config_path, cfg_override=cfg_override, dry_run=dry_run, qmd_update_enabled=qmd_update_enabled, client=client)

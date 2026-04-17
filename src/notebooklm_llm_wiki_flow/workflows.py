@@ -7,6 +7,8 @@ from typing import Any
 
 import yaml
 
+URL_RE = re.compile(r"https?://\S+")
+
 POLICY_COMPARE_SOURCES = [
     "https://www.anthropic.com/legal/commercial-terms",
     "https://www.anthropic.com/legal/aup",
@@ -21,6 +23,53 @@ POLICY_COMPARE_SOURCES = [
 def slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
     return slug or "workflow"
+
+
+def extract_urls(text: str) -> list[str]:
+    return [match.rstrip(").,]") for match in URL_RE.findall(text)]
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        result.append(value)
+    return result
+
+
+def build_note_wiki_plan(prompt: str, *, title: str | None = None, sources: list[str] | None = None) -> dict[str, Any]:
+    prompt_sources = extract_urls(prompt)
+    merged_sources = _dedupe([*(sources or []), *prompt_sources])
+    cleaned_prompt = URL_RE.sub("", prompt)
+    cleaned_prompt = re.sub(r"\s+", " ", cleaned_prompt).strip(" -:\n\t")
+    title_text = title or cleaned_prompt or "Note Wiki Request"
+    base_slug = f"note-wiki-{slugify(title_text)}"
+    return {
+        "workflow": "note-wiki",
+        "title": title_text,
+        "sources": merged_sources,
+        "report_append": prompt,
+        "question": (
+            "Create a practical note, synthesis, and actionable checklist for this request: "
+            f"{cleaned_prompt or prompt}"
+        ),
+        "wiki_outputs": {
+            "comparison_slug": base_slug,
+            "comparison_title": title_text,
+            "checklist_slug": f"{base_slug}-checklist",
+            "checklist_title": f"{title_text} checklist",
+        },
+        "entities": [],
+        "required_wiki_outputs": [
+            "comparison page",
+            "checklist page",
+            "raw source capture",
+        ],
+        "source_prompt": prompt,
+    }
 
 
 def build_policy_compare_plan() -> dict[str, Any]:

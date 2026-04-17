@@ -9,10 +9,11 @@ from rich import print
 
 from . import __version__
 from .config import load_config
-from .flow import run_from_yaml, run_policy_compare
+from .flow import run_from_yaml, run_plan, run_policy_compare
+from .models import WorkflowConfig
 from .obsidian_kit import install_obsidian_kit
 from .report_parser import extract_report_highlights
-from .workflows import build_policy_compare_plan
+from .workflows import build_note_wiki_plan, build_policy_compare_plan
 
 app = typer.Typer(help="NotebookLM → LLM Wiki → Obsidian workflow helper")
 
@@ -35,6 +36,54 @@ def _root(
     ),
 ) -> None:
     """nlwflow: NotebookLM → LLM Wiki → Obsidian workflow helper."""
+
+
+def _resolved_path(value: Path | None) -> Path | None:
+    if value is None:
+        return None
+    return value.expanduser().resolve()
+
+
+def _with_paths(cfg: WorkflowConfig, *, obsidian_vault: Path, wiki_path: Path) -> WorkflowConfig:
+    return WorkflowConfig(
+        project_name=cfg.project_name,
+        obsidian_vault=obsidian_vault,
+        wiki_path=wiki_path,
+        qmd_collection=cfg.qmd_collection,
+        artifacts_root=cfg.artifacts_root,
+        notebooklm_command=cfg.notebooklm_command,
+        qmd_command=cfg.qmd_command,
+    )
+
+
+def _resolve_note_wiki_config(
+    *,
+    base_cfg: WorkflowConfig,
+    vault: Path | None,
+    wiki_path: Path | None,
+) -> WorkflowConfig:
+    resolved_vault = _resolved_path(vault) or base_cfg.obsidian_vault
+    if not resolved_vault.exists():
+        response = typer.prompt(
+            "Obsidian vault path not found. Enter vault path",
+            default=str(resolved_vault),
+        )
+        resolved_vault = Path(response).expanduser().resolve()
+
+    default_wiki = resolved_vault / "LLM-Wiki"
+    resolved_wiki = _resolved_path(wiki_path) or base_cfg.wiki_path
+    if not resolved_wiki.exists():
+        response = typer.prompt(
+            "LLM Wiki path not found. Enter wiki path",
+            default=str(default_wiki),
+        )
+        resolved_wiki = Path(response).expanduser().resolve()
+
+    return _with_paths(
+        base_cfg,
+        obsidian_vault=resolved_vault,
+        wiki_path=resolved_wiki,
+    )
 
 
 @app.command()
@@ -110,6 +159,48 @@ def run_policy_compare_command(
     no_qmd_update: bool = typer.Option(False, '--no-qmd-update', help='Skip qmd update after writing notes'),
 ) -> None:
     payload = run_policy_compare(config, dry_run=dry_run, qmd_update_enabled=not no_qmd_update)
+    if json_output:
+        typer.echo(json.dumps(payload, ensure_ascii=False))
+        raise typer.Exit()
+
+    print(json.dumps(payload, ensure_ascii=False, indent=2))
+
+
+@app.command('note-wiki')
+def note_wiki_command(
+    prompt: str,
+    config: str | None = typer.Option(None, help="Optional config file"),
+    source: list[str] | None = typer.Option(None, '--source', help='Additional source URL'),
+    title: str | None = typer.Option(None, '--title', help='Optional note title'),
+    vault: Path | None = typer.Option(None, '--vault', help='Override Obsidian vault path'),
+    wiki_path: Path | None = typer.Option(None, '--wiki-path', help='Override LLM Wiki path'),
+    dry_run: bool = typer.Option(False, '--dry-run', help='Print generated plan without executing NotebookLM'),
+    json_output: bool = typer.Option(False, '--json', help='Emit JSON'),
+    no_qmd_update: bool = typer.Option(False, '--no-qmd-update', help='Skip qmd update after writing notes'),
+) -> None:
+    base_cfg = load_config(config) if config else load_config()
+    resolved_cfg = _resolve_note_wiki_config(
+        base_cfg=base_cfg,
+        vault=vault,
+        wiki_path=wiki_path,
+    )
+    plan = build_note_wiki_plan(prompt, title=title, sources=source or [])
+    if not plan['sources'] and not dry_run:
+        raise typer.BadParameter(
+            'No source URLs found. Include URLs in the prompt or pass one or more --source values.',
+        )
+
+    payload = run_plan(
+        plan,
+        config_path=config,
+        cfg_override=resolved_cfg,
+        dry_run=dry_run,
+        qmd_update_enabled=not no_qmd_update,
+    )
+    payload['resolved_config'] = {
+        'obsidian_vault': str(resolved_cfg.obsidian_vault),
+        'wiki_path': str(resolved_cfg.wiki_path),
+    }
     if json_output:
         typer.echo(json.dumps(payload, ensure_ascii=False))
         raise typer.Exit()
