@@ -7,6 +7,7 @@ from typing import Any, Iterable
 
 from .models import ComparisonDraft
 from .report_parser import extract_report_highlights
+from .template_renderer import render_entity_template
 
 
 def extract_core_policy_table_rows(report_markdown: str) -> list[tuple[str, str, str]]:
@@ -129,67 +130,39 @@ def render_checklist_note(checklist: Iterable[str], sources: list[str], source_u
 
 
 def render_openai_entity(created: str, sources: list[str], source_urls: list[str]) -> str:
-    body = [
-        "---",
-        "title: OpenAI",
-        f"created: {created}",
-        f"updated: {created}",
-        "type: entity",
-        "tags: [ai-ml, company, technology]",
-        f"source_notes: [{', '.join(sources)}]",
-    ]
-    body.extend(_yaml_list_lines("source_urls", source_urls))
-    body.extend([
-        "---",
-        "",
-        "# OpenAI",
-        "",
-        "## Overview",
-        "OpenAI는 ChatGPT Business, Enterprise, Edu, Healthcare, Teachers, 그리고 API 플랫폼을 통해 기업용 AI 서비스를 제공하는 회사다.",
-        "",
-        "## Policy posture",
-        "- business data는 기본적으로 모델 학습에 사용하지 않음",
-        "- 입력과 출력에 대한 고객 권리 보장",
-        "- enterprise retention control과 admin controls 제공",
-        "- compliance, trust portal, encryption, residency 옵션을 강하게 상품화",
-        "",
-        "## Related",
-        "[[anthropic]], [[llm-wiki]], [[rag]]",
-        "",
-    ])
-    return "\n".join(body)
+    return render_entity_template(
+        title="OpenAI",
+        created=created,
+        updated=created,
+        source_notes=sources,
+        source_urls=source_urls,
+        overview="OpenAI는 ChatGPT Business, Enterprise, Edu, Healthcare, Teachers, 그리고 API 플랫폼을 통해 기업용 AI 서비스를 제공하는 회사다.",
+        policy_posture=[
+            "business data는 기본적으로 모델 학습에 사용하지 않음",
+            "입력과 출력에 대한 고객 권리 보장",
+            "enterprise retention control과 admin controls 제공",
+            "compliance, trust portal, encryption, residency 옵션을 강하게 상품화",
+        ],
+        related_links=["[[anthropic]]", "[[llm-wiki]]", "[[rag]]"],
+    )
 
 
 def render_anthropic_entity(created: str, sources: list[str], source_urls: list[str]) -> str:
-    body = [
-        "---",
-        "title: Anthropic",
-        "created: 2026-04-09",
-        f"updated: {created}",
-        "type: entity",
-        "tags: [ai-ml, company, technology]",
-        f"source_notes: [{', '.join(sources)}]",
-    ]
-    body.extend(_yaml_list_lines("source_urls", source_urls))
-    body.extend([
-        "---",
-        "",
-        "# Anthropic",
-        "",
-        "## Overview",
-        "Anthropic는 Claude 계열 모델과 Claude Platform을 만드는 AI 회사다. 최근에는 정책·거버넌스·고위험 사용사례 통제를 더 강하게 구조화하고 있다.",
-        "",
-        "## Policy posture",
-        "- commercial customer content를 모델 학습에 사용하지 않음",
-        "- 표준 API 데이터는 30일 내 삭제 가능 구조",
-        "- policy violation 데이터는 장기 보존될 수 있음",
-        "- 고위험 사용 사례에서 human review와 disclosure를 중시",
-        "",
-        "## Related",
-        "[[managed-agents]], [[openai]], [[llm-wiki]]",
-        "",
-    ])
-    return "\n".join(body)
+    return render_entity_template(
+        title="Anthropic",
+        created=created,
+        updated=created,
+        source_notes=sources,
+        source_urls=source_urls,
+        overview="Anthropic는 Claude 계열 모델과 Claude Platform을 만드는 AI 회사다. 최근에는 정책·거버넌스·고위험 사용사례 통제를 더 강하게 구조화하고 있다.",
+        policy_posture=[
+            "commercial customer content를 모델 학습에 사용하지 않음",
+            "표준 API 데이터는 30일 내 삭제 가능 구조",
+            "policy violation 데이터는 장기 보존될 수 있음",
+            "고위험 사용 사례에서 human review와 disclosure를 중시",
+        ],
+        related_links=["[[managed-agents]]", "[[openai]]", "[[llm-wiki]]"],
+    )
 
 
 def render_inbox_summary(plan: dict[str, Any], notebook_id: str, artifacts_dir: Path, share_link: str | None = None) -> str:

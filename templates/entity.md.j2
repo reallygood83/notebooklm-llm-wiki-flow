@@ -1,0 +1,21 @@
+---
+title: {{ title }}
+created: {{ created }}
+updated: {{ updated }}
+type: entity
+tags: [ai-ml, company, technology]
+source_notes: [{{ source_notes|join(', ') }}]
+source_urls:
+{% for url in source_urls %}  - {{ url }}
+{% endfor %}---
+
+# {{ title }}
+
+## Overview
+{{ overview }}
+
+## Policy posture
+{% for bullet in policy_posture %}- {{ bullet }}
+{% endfor %}
+## Related
+{{ related_links|join(', ') }}
