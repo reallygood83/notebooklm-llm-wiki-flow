@@ -8,6 +8,7 @@ import typer
 from rich import print
 
 from . import __version__
+from .claude_skill import install_claude_skill
 from .config import load_config
 from .flow import run_from_yaml, run_plan, run_policy_compare
 from .models import WorkflowConfig
@@ -110,6 +111,27 @@ def init_config(target: Path = typer.Argument(Path('config/project.yaml'))) -> N
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(source.read_text(encoding='utf-8'), encoding='utf-8')
     print(f"Wrote config to {target}")
+
+
+@app.command('install-claude-skill')
+def install_claude_skill_command(
+    target: Path | None = typer.Option(
+        None,
+        '--target',
+        help='Target commands directory (defaults to ~/.claude/commands)',
+    ),
+    force: bool = typer.Option(False, '--force', help='Overwrite if already installed'),
+    json_output: bool = typer.Option(False, '--json', help='Emit JSON'),
+) -> None:
+    try:
+        installed = install_claude_skill(target_dir=target, force=force)
+    except FileExistsError as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    payload = {"installed": str(installed)}
+    if json_output:
+        typer.echo(json.dumps(payload, ensure_ascii=False))
+        raise typer.Exit()
+    print(f"Installed /note-wiki skill at {installed}")
 
 
 @app.command('install-obsidian-kit')

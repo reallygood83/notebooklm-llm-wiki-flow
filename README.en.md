@@ -160,10 +160,45 @@ CLI commands
   - run NotebookLM and update wiki/obsidian/qmd
 - `nlwflow run-from-yaml WORKFLOW.yaml`
   - run a reusable YAML workflow
+- `nlwflow install-claude-skill`
+  - install the `/note-wiki` slash command into Claude Code (`~/.claude/commands/note-wiki.md`)
 - `nlwflow install-obsidian-kit`
   - install a starter vault layout
 - `nlwflow score-report REPORT.md`
   - extract high-signal sections
+
+===
+
+Claude Code `/note-wiki` slash command
+
+Installing this project also ships a `/note-wiki` slash command for Claude Code.
+Give it a prompt and one or more source URLs, and Claude will drive the
+`nlwflow note-wiki` CLI to run the full NotebookLM → LLM Wiki → Obsidian pipeline
+for you.
+
+Install
+
+```bash
+./.venv/bin/nlwflow install-claude-skill
+# → writes ~/.claude/commands/note-wiki.md
+# If you cloned this repo, .claude/commands/note-wiki.md is already available
+# as a project-level slash command.
+```
+
+Example usage inside Claude Code
+
+```
+/note-wiki Compare Anthropic and OpenAI education policies
+  https://www.anthropic.com/legal/aup
+  https://openai.com/policies/usage-policies/
+```
+
+Claude will automatically:
+1. Run `nlwflow note-wiki "..." --dry-run --json` to preview the plan
+2. Ask for confirmation, then execute the real run
+3. Summarize the result (notebook_id, comparison_page, manifest_path)
+
+Use `--target` to change the install location or `--force` to overwrite.
 
 ===
 

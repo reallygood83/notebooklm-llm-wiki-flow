@@ -159,10 +159,43 @@ CLI 명령
   - NotebookLM 실행 + wiki/obsidian/qmd 반영
 - `nlwflow run-from-yaml WORKFLOW.yaml`
   - 재사용 가능한 YAML 워크플로 실행
+- `nlwflow install-claude-skill`
+  - Claude Code 에 `/note-wiki` 슬래시 명령 설치 (`~/.claude/commands/note-wiki.md`)
 - `nlwflow install-obsidian-kit`
   - starter vault 설치
 - `nlwflow score-report REPORT.md`
   - high-signal section 추출
+
+===
+
+Claude Code `/note-wiki` 슬래시 명령
+
+이 프로젝트를 설치하면 Claude Code 에서 `/note-wiki` 슬래시 명령을 쓸 수 있습니다.
+프롬프트와 source URL 을 넘기면, Claude 가 `nlwflow note-wiki` 를 호출해서
+NotebookLM → LLM Wiki → Obsidian 파이프라인을 자동으로 구동합니다.
+
+설치
+
+```bash
+./.venv/bin/nlwflow install-claude-skill
+# → ~/.claude/commands/note-wiki.md 생성
+# 이 프로젝트를 클론한 상태라면 .claude/commands/note-wiki.md 는 이미 포함되어 있어 project-level 로도 동작합니다.
+```
+
+Claude Code 에서 사용 예
+
+```
+/note-wiki Anthropic 과 OpenAI 의 education 정책 비교해줘
+  https://www.anthropic.com/legal/aup
+  https://openai.com/policies/usage-policies/
+```
+
+Claude 가 자동으로 다음을 수행합니다.
+1. `nlwflow note-wiki "..." --dry-run --json` 으로 플랜 확인
+2. 사용자 승인 후 실제 실행
+3. 결과 (notebook_id, comparison_page, manifest_path) 요약 보고
+
+`--target` 옵션으로 설치 위치를 바꾸거나, `--force` 로 덮어쓸 수 있습니다.
 
 ===
 
