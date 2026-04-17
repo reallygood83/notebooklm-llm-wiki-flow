@@ -26,6 +26,9 @@ NotebookLM 은 자료를 모으고 초안을 만드는 단계이고,
 4. Obsidian 에서 사람이 읽고 수정할 수 있게 만듭니다.
 5. qmd 로 다시 인덱싱해서 검색 가능하게 만듭니다.
 
+설치 후에는 Claude Code 안에서 `/note-wiki <프롬프트 + URL>` 한 줄만 입력해도
+이 전체 파이프라인이 자동으로 돕니다.
+
 ===
 
 LLM Wiki 란?
@@ -133,14 +136,16 @@ USE_PIPX=1 ./scripts/bootstrap.sh
 
 1. 저장소 클론
 2. `./scripts/bootstrap.sh`
-3. `notebooklm login` — 브라우저 로그인 1회
+3. `./.venv/bin/notebooklm login` — 브라우저 로그인 1회
 4. `./.venv/bin/nlwflow init-config`
 5. `./.venv/bin/nlwflow doctor --json`
-6. 필요하면 starter kit 설치
+6. Claude Code 슬래시 명령 설치 (옵션)
+   - `./.venv/bin/nlwflow install-claude-skill` → `~/.claude/commands/note-wiki.md`
+7. 필요하면 starter kit 설치
    - `./.venv/bin/nlwflow install-obsidian-kit --vault /path/to/vault`
-7. 기본 실행
+8. 기본 실행
    - `./.venv/bin/nlwflow run-policy-compare --json`
-8. YAML 워크플로 실행
+9. YAML 워크플로 실행
    - `./.venv/bin/nlwflow run-from-yaml examples/policy-compare-anthropic-openai-education.yaml --json`
 
 ===

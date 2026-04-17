@@ -134,14 +134,16 @@ Quick start
 
 1. Clone the repository
 2. Run `./scripts/bootstrap.sh`
-3. Run `notebooklm login` — one-time browser login
+3. Run `./.venv/bin/notebooklm login` — one-time browser login
 4. Run `./.venv/bin/nlwflow init-config`
 5. Run `./.venv/bin/nlwflow doctor --json`
-6. Optionally install the starter kit
+6. Optionally install the Claude Code slash command
+   - `./.venv/bin/nlwflow install-claude-skill` → `~/.claude/commands/note-wiki.md`
+7. Optionally install the starter kit
    - `./.venv/bin/nlwflow install-obsidian-kit --vault /path/to/vault`
-7. Run the built-in workflow
+8. Run the built-in workflow
    - `./.venv/bin/nlwflow run-policy-compare --json`
-8. Run a reusable YAML workflow
+9. Run a reusable YAML workflow
    - `./.venv/bin/nlwflow run-from-yaml examples/policy-compare-anthropic-openai-education.yaml --json`
 
 ===
