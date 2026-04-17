@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+from typing import Any
+
 from .models import ExtractedTopic
 
 
-def parse_mindmap_topics(data: dict) -> list[ExtractedTopic]:
+def parse_mindmap_topics(data: dict[str, Any]) -> list[ExtractedTopic]:
     topics: list[ExtractedTopic] = []
     root = data.get("name", "root")
 
-    def walk(node: dict, path: list[str]) -> None:
+    def walk(node: dict[str, Any], path: list[str]) -> None:
         children = node.get("children") or []
         for child in children:
             next_path = [*path, child["name"]]

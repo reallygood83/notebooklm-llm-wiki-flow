@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
-import re
+from typing import Any
 
 import yaml
-
 
 POLICY_COMPARE_SOURCES = [
     "https://www.anthropic.com/legal/commercial-terms",
@@ -23,7 +23,7 @@ def slugify(value: str) -> str:
     return slug or "workflow"
 
 
-def build_policy_compare_plan() -> dict:
+def build_policy_compare_plan() -> dict[str, Any]:
     today = date.today().isoformat()
     title = f"Anthropic vs OpenAI Policy Comparison for Education Vertical AI {today}"
     base_slug = "anthropic-vs-openai-education-vertical-ai-policy"
@@ -61,7 +61,7 @@ def build_policy_compare_plan() -> dict:
     }
 
 
-def load_workflow_yaml(path: str | Path) -> dict:
+def load_workflow_yaml(path: str | Path) -> dict[str, Any]:
     workflow_path = Path(path).expanduser().resolve()
     with workflow_path.open("r", encoding="utf-8") as handle:
         raw = yaml.safe_load(handle) or {}

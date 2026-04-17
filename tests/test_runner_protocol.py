@@ -5,12 +5,12 @@ import pytest
 
 from notebooklm_llm_wiki_flow import flow
 from notebooklm_llm_wiki_flow.models import WorkflowConfig
-from notebooklm_llm_wiki_flow.runner import NotebookLMRunner
 from notebooklm_llm_wiki_flow.notebooklm_client import (
     NotebookLMClient,
     NotebookLMCommandError,
     NotebookLMTimeoutError,
 )
+from notebooklm_llm_wiki_flow.runner import NotebookLMRunner
 
 
 class FakeNotebookLMClient:

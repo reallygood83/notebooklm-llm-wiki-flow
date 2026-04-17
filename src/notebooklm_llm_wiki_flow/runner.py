@@ -4,7 +4,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from .notebooklm_client import NotebookLMCommandError, NotebookLMTimeoutError
+from .notebooklm_client import JSONDict, NotebookLMCommandError, NotebookLMTimeoutError
 
 
 class NotebookLMRunner:
@@ -36,40 +36,54 @@ class NotebookLMRunner:
             raise NotebookLMTimeoutError(
                 step=step,
                 command=list(exc.cmd) if isinstance(exc.cmd, (list, tuple)) else command,
-                timeout_seconds=exc.timeout,
+                timeout_seconds=int(exc.timeout) if exc.timeout is not None else None,
             ) from exc
         return result.stdout.strip()
 
-    def _run_json(self, step: str, *args: str, timeout_seconds: int | None = None) -> dict:
+    def _run_json(self, step: str, *args: str, timeout_seconds: int | None = None) -> JSONDict:
         command = self._command(*args)
         stdout = self._run(step, *args, timeout_seconds=timeout_seconds)
         try:
-            return json.loads(stdout)
+            payload = json.loads(stdout)
         except json.JSONDecodeError as exc:
             raise NotebookLMCommandError(
                 step=step,
                 command=command,
                 stdout=stdout,
             ) from exc
+        if not isinstance(payload, dict):
+            raise NotebookLMCommandError(
+                step=step,
+                command=command,
+                stdout=stdout,
+            )
+        return payload
 
-    def _run_json_field(self, step: str, field: str, *args: str, timeout_seconds: int | None = None) -> dict:
+    def _run_json_field(self, step: str, field: str, *args: str, timeout_seconds: int | None = None) -> JSONDict:
         payload = self._run_json(step, *args, timeout_seconds=timeout_seconds)
         try:
-            return payload[field]
+            value = payload[field]
         except KeyError as exc:
             raise NotebookLMCommandError(
                 step=step,
                 command=self._command(*args),
                 stdout=json.dumps(payload, ensure_ascii=False),
             ) from exc
+        if not isinstance(value, dict):
+            raise NotebookLMCommandError(
+                step=step,
+                command=self._command(*args),
+                stdout=json.dumps(payload, ensure_ascii=False),
+            )
+        return value
 
-    def create_notebook(self, title: str) -> dict:
+    def create_notebook(self, title: str) -> JSONDict:
         return self._run_json_field('create_notebook', 'notebook', 'create', title, '--json')
 
-    def add_source(self, notebook_id: str, source: str) -> dict:
+    def add_source(self, notebook_id: str, source: str) -> JSONDict:
         return self._run_json_field('add_source', 'source', 'source', 'add', '-n', notebook_id, source, '--json')
 
-    def wait_source(self, notebook_id: str, source_id: str, timeout: int = 300) -> dict:
+    def wait_source(self, notebook_id: str, source_id: str, timeout: int = 300) -> JSONDict:
         return self._run_json(
             'wait_source',
             'source',
@@ -83,10 +97,10 @@ class NotebookLMRunner:
             timeout_seconds=timeout + 5,
         )
 
-    def generate_report(self, notebook_id: str, report_append: str) -> dict:
+    def generate_report(self, notebook_id: str, report_append: str) -> JSONDict:
         return self._run_json('generate_report', 'generate', 'report', '-n', notebook_id, '--format', 'study-guide', '--append', report_append, '--json')
 
-    def wait_artifact(self, notebook_id: str, artifact_id: str, timeout: int = 900) -> dict:
+    def wait_artifact(self, notebook_id: str, artifact_id: str, timeout: int = 900) -> JSONDict:
         return self._run_json(
             'wait_artifact',
             'artifact',
@@ -100,10 +114,10 @@ class NotebookLMRunner:
             timeout_seconds=timeout + 5,
         )
 
-    def generate_mind_map(self, notebook_id: str) -> dict:
+    def generate_mind_map(self, notebook_id: str) -> JSONDict:
         return self._run_json('generate_mind_map', 'generate', 'mind-map', '-n', notebook_id, '--json')
 
-    def ask(self, notebook_id: str, question: str) -> dict:
+    def ask(self, notebook_id: str, question: str) -> JSONDict:
         return self._run_json('ask', 'ask', '-n', notebook_id, question, '--json')
 
     def download_report(self, notebook_id: str, output_path: Path) -> None:

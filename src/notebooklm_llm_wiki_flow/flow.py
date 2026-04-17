@@ -16,6 +16,7 @@ from .flow_models import (
     WikiRenderResult,
 )
 from .index_builder import update_index_file
+from .models import WorkflowConfig
 from .notebooklm_client import NotebookLMClient
 from .persistence import GeneratedFile, persist_generated_outputs
 from .policy_compare import (
@@ -107,7 +108,7 @@ def _run_notebook_phase(plan: dict[str, Any], client: NotebookLMClient) -> Noteb
     )
 
 
-def _export_artifacts_phase(cfg, client: NotebookLMClient, notebook_run: NotebookRunResult) -> ArtifactExportResult:
+def _export_artifacts_phase(cfg: WorkflowConfig, client: NotebookLMClient, notebook_run: NotebookRunResult) -> ArtifactExportResult:
     artifacts_dir = cfg.artifacts_root / notebook_run.notebook_id
     artifacts_dir.mkdir(parents=True, exist_ok=True)
     report_path = artifacts_dir / "report.md"
@@ -208,7 +209,7 @@ def _render_wiki_phase(plan: dict[str, Any], notebook_run: NotebookRunResult, ar
 
 
 def _persist_outputs_phase(
-    cfg,
+    cfg: WorkflowConfig,
     plan: dict[str, Any],
     notebook_run: NotebookRunResult,
     artifacts: ArtifactExportResult,
@@ -282,7 +283,7 @@ def _persist_outputs_phase(
 
 
 def _update_indexes_phase(
-    cfg,
+    cfg: WorkflowConfig,
     plan: dict[str, Any],
     notebook_run: NotebookRunResult,
     wiki_render: WikiRenderResult,

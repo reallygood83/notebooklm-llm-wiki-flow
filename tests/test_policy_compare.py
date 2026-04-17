@@ -1,5 +1,7 @@
-from notebooklm_llm_wiki_flow.policy_compare import extract_checklist_items, extract_core_policy_table_rows
-
+from notebooklm_llm_wiki_flow.policy_compare import (
+    extract_checklist_items,
+    extract_core_policy_table_rows,
+)
 
 REPORT = """# Business AI Policy Comparison: Anthropic and OpenAI
 

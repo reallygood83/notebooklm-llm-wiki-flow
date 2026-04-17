@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable
+from typing import Any, Iterable
 
 from .models import ComparisonDraft
 from .report_parser import extract_report_highlights
@@ -192,7 +192,7 @@ def render_anthropic_entity(created: str, sources: list[str], source_urls: list[
     return "\n".join(body)
 
 
-def render_inbox_summary(plan: dict, notebook_id: str, artifacts_dir: Path, share_link: str | None = None) -> str:
+def render_inbox_summary(plan: dict[str, Any], notebook_id: str, artifacts_dir: Path, share_link: str | None = None) -> str:
     created = datetime.now().strftime("%Y-%m-%d %H:%M:%S %Z").strip()
     lines = [
         "---",
@@ -245,7 +245,7 @@ def render_inbox_summary(plan: dict, notebook_id: str, artifacts_dir: Path, shar
     return "\n".join(lines)
 
 
-def render_raw_source_pack(plan: dict, created: str) -> str:
+def render_raw_source_pack(plan: dict[str, Any], created: str) -> str:
     lines = [
         "---",
         "title: Anthropic and OpenAI business policy source pack",

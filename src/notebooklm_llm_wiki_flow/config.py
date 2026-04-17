@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from pathlib import Path
 import os
+from pathlib import Path
+
 import yaml
 
 from .models import WorkflowConfig
-
 
 DEFAULT_CONFIG = {
     "project_name": "notebooklm-llm-wiki-flow",

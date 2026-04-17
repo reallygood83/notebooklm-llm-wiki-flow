@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 KIT_FILES = {
     Path('000-Inbox/NLW Getting Started.md'): """---
 title: NLW Getting Started

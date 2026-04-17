@@ -1,6 +1,5 @@
 from notebooklm_llm_wiki_flow.report_parser import extract_report_highlights
 
-
 REPORT = """# Business AI Policy Comparison
 
 ## 1. Data Ownership and Model Training
