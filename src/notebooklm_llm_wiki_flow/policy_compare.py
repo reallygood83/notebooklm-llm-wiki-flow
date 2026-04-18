@@ -121,6 +121,29 @@ def build_comparison_draft(report_markdown: str, qa_answer: str, title: str = "A
     )
 
 
+def build_generic_comparison_draft(report_markdown: str, qa_answer: str, *, title: str) -> ComparisonDraft:
+    """Topic-agnostic comparison draft for `note-wiki` / `yaml` workflows."""
+    highlights = extract_report_highlights(report_markdown)
+    checklist = extract_checklist_items(qa_answer, report_markdown)
+
+    key_differences: list[tuple[str, str, str, str]] = []
+    for section in highlights.sections[:6]:
+        head_line = section.body.splitlines()[0] if section.body else ""
+        key_differences.append((section.title, head_line.strip(), "", "NotebookLM report에서 추출한 섹션 요지"))
+
+    summary_lines = [f"NotebookLM report와 Q&A를 바탕으로 생성한 '{title}' 요약 초안이다."]
+    if highlights.bullets:
+        summary_lines.append("핵심 하이라이트: " + "; ".join(highlights.bullets[:3]))
+
+    return ComparisonDraft(
+        title=title,
+        summary=" ".join(summary_lines),
+        key_differences=key_differences,
+        checklist=checklist,
+        related_links=["llm-wiki"],
+    )
+
+
 def _yaml_list_lines(key: str, values: list[str]) -> list[str]:
     if not values:
         return []
@@ -129,14 +152,23 @@ def _yaml_list_lines(key: str, values: list[str]) -> list[str]:
     return lines
 
 
-def render_checklist_note(checklist: Iterable[str], sources: list[str], source_urls: list[str], created: str, title: str = "Education vertical AI policy checklist") -> str:
+def render_checklist_note(
+    checklist: Iterable[str],
+    sources: list[str],
+    source_urls: list[str],
+    created: str,
+    title: str = "Education vertical AI policy checklist",
+    *,
+    tags: list[str] | None = None,
+    related_links: list[str] | None = None,
+) -> str:
     body = [
         "---",
         f"title: {title}",
         f"created: {created}",
         f"updated: {created}",
         "type: query",
-        "tags: [ai-ml, education, technology, question]",
+        f"tags: [{', '.join(tags or ['ai-ml', 'education', 'technology', 'question'])}]",
         f"source_notes: [{', '.join(sources)}]",
     ]
     body.extend(_yaml_list_lines("source_urls", source_urls))
@@ -148,10 +180,11 @@ def render_checklist_note(checklist: Iterable[str], sources: list[str], source_u
         "## Checklist",
     ])
     body.extend(f"- [ ] {item}" for item in checklist)
+    related = related_links if related_links is not None else ["anthropic", "openai", "llm-wiki"]
     body.extend([
         "",
         "## Related",
-        "[[anthropic]], [[openai]], [[llm-wiki]]",
+        ", ".join(f"[[{slug}]]" for slug in related),
         "",
     ])
     return "\n".join(body)
@@ -246,6 +279,67 @@ def render_inbox_summary(plan: dict[str, Any], notebook_id: str, artifacts_dir: 
     return "\n".join(lines)
 
 
+def render_generic_inbox_summary(
+    plan: dict[str, Any],
+    notebook_id: str,
+    artifacts_dir: Path,
+    *,
+    qmd_collection: str,
+    wiki_links: list[str],
+    share_link: str | None = None,
+) -> str:
+    """Topic-agnostic Obsidian inbox note for `note-wiki` / `yaml` workflows."""
+    created = datetime.now().strftime("%Y-%m-%d %H:%M:%S %Z").strip()
+    title = plan["title"]
+    lines = [
+        "---",
+        f"title: {title}",
+        "tags:",
+        "  - notebooklm",
+        "  - llm-wiki",
+        "  - research-note",
+        f"date: {datetime.now().date().isoformat()}",
+        f"created: {created}",
+        f"updated: {created}",
+        "type: research-note",
+        "status: draft",
+        "source:",
+    ]
+    for source in plan["sources"]:
+        lines.append(f"  - {source}")
+    lines.extend([
+        f"notebook_id: {notebook_id}",
+        f"notebook_title: {title}",
+        f"artifacts_dir: {artifacts_dir}",
+        f"qmd_collection: {qmd_collection}",
+    ])
+    if share_link:
+        lines.append(f"share_link: {share_link}")
+    lines.extend([
+        "---",
+        "",
+        f"# {title}",
+        "",
+        "> [!success]",
+        "> NotebookLM-LLM-Wiki flow로 소스를 수집하고 report / mind map / Q&A를 생성해 wiki와 Obsidian에 반영했다.",
+        "",
+        "## 생성된 wiki 페이지",
+    ])
+    lines.extend(f"- [[{slug}]]" for slug in wiki_links)
+    lines.extend([
+        "",
+        "## 소스 URL",
+    ])
+    lines.extend(f"- {source}" for source in plan["sources"])
+    lines.extend([
+        "",
+        f"## Report 원문 (전체)",
+        f"- `{artifacts_dir}/report.md`",
+        "",
+    ])
+    return "\n".join(lines)
+
+
 def render_raw_source_pack(plan: dict[str, Any], created: str) -> str:
     lines = [
         "---",
@@ -276,6 +370,39 @@ def render_raw_source_pack(plan: dict[str, Any], created: str) -> str:
         "- human review for high-stakes decisions",
         "- enterprise controls and compliance posture",
         "- indemnity and legal risk allocation",
+        "",
+    ])
+    return "\n".join(lines)
+
+
+def render_generic_raw_source_pack(plan: dict[str, Any], created: str) -> str:
+    """Topic-agnostic raw source pack for `note-wiki` / `yaml` workflows."""
+    title = f"Source pack — {plan['title']}"
+    sources: list[str] = plan["sources"]
+    lines = [
+        "---",
+        f"title: {title}",
+        f"created: {created}",
+        f"updated: {created}",
+        "type: source",
+        "tags: [notebooklm, research, source-pack]",
+        f"source_url: {sources[0] if sources else ''}",
+        "source_site: user-provided",
+        f"source_date: {created}",
+    ]
+    lines.extend(_yaml_list_lines("source_urls", sources))
+    lines.extend([
+        "---",
+        "",
+        f"# {title}",
+        "",
+        "## URLs",
+    ])
+    lines.extend(f"- {source}" for source in sources)
+    lines.extend([
+        "",
+        "## Prompt",
+        plan.get("source_prompt") or plan.get("report_append") or "",
         "",
     ])
     return "\n".join(lines)

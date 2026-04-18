@@ -3,10 +3,17 @@ from __future__ import annotations
 from .models import ComparisonDraft
 
 
-def render_comparison_note(draft: ComparisonDraft) -> str:
-    table_rows = ["| 항목 | Anthropic | OpenAI | 시사점 |", "|------|-----------|--------|--------|"]
-    for axis, anthropic, openai, implication in draft.key_differences:
-        table_rows.append(f"| {axis} | {anthropic} | {openai} | {implication} |")
+def render_comparison_note(
+    draft: ComparisonDraft,
+    *,
+    column_labels: tuple[str, str] = ("Anthropic", "OpenAI"),
+    section_heading: str = "Side-by-side comparison",
+) -> str:
+    header = f"| 항목 | {column_labels[0]} | {column_labels[1]} | 시사점 |"
+    divider = "|------|" + "------|" * 3
+    table_rows = [header, divider]
+    for axis, col_a, col_b, implication in draft.key_differences:
+        table_rows.append(f"| {axis} | {col_a} | {col_b} | {implication} |")
 
     checklist_lines = [f"- [ ] {item}" for item in draft.checklist]
     related = ', '.join(f'[[{slug}]]' for slug in draft.related_links)
@@ -16,7 +23,7 @@ def render_comparison_note(draft: ComparisonDraft) -> str:
         "",
         draft.summary,
         "",
-        "## Side-by-side comparison",
+        f"## {section_heading}",
         *table_rows,
         "",
         "## Checklist",
