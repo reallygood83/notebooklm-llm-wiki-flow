@@ -22,8 +22,11 @@ from .notebooklm_client import NotebookLMClient
 from .persistence import GeneratedFile, persist_generated_outputs
 from .policy_compare import (
     build_comparison_draft,
+    build_generic_comparison_draft,
     render_anthropic_entity,
     render_checklist_note,
+    render_generic_inbox_summary,
+    render_generic_raw_source_pack,
     render_inbox_summary,
     render_openai_entity,
     render_raw_source_pack,
@@ -141,20 +144,27 @@ def _export_artifacts_phase(cfg: WorkflowConfig, client: NotebookLMClient, noteb
     )
 
 
-def _render_wiki_phase(plan: dict[str, Any], notebook_run: NotebookRunResult, artifacts: ArtifactExportResult) -> WikiRenderResult:
+def _render_wiki_phase(plan: dict[str, Any], notebook_run: NotebookRunResult, artifacts: ArtifactExportResult, cfg: WorkflowConfig) -> WikiRenderResult:
     created = date.today().isoformat()
     workflow_slug = slugify(plan["wiki_outputs"].get("comparison_slug") or plan["title"])
     raw_sources_rel = f"raw/articles/{workflow_slug}-sources-{created}.md"
     raw_report_rel = f"raw/articles/notebooklm-{workflow_slug}-report-{created}.md"
-    raw_sources_content = render_raw_source_pack(plan, created)
 
+    is_policy_compare = plan.get("workflow") == "policy-compare"
+    raw_sources_content = (
+        render_raw_source_pack(plan, created)
+        if is_policy_compare
+        else render_generic_raw_source_pack(plan, created)
+    )
+
+    report_tags = "[ai-ml, education, technology, research]" if is_policy_compare else "[notebooklm, research]"
     raw_report_frontmatter = "\n".join([
         "---",
         f"title: NotebookLM report — {plan['title']}",
         f"created: {created}",
         f"updated: {created}",
         "type: source",
-        "tags: [ai-ml, education, technology, research]",
+        f"tags: {report_tags}",
         f"source_url: notebooklm://{notebook_run.notebook_id}/report/{notebook_run.report_task['task_id']}",
         "source_site: NotebookLM",
         f"source_date: {created}",
@@ -170,20 +180,36 @@ def _render_wiki_phase(plan: dict[str, Any], notebook_run: NotebookRunResult, ar
     checklist_slug = plan["wiki_outputs"]["checklist_slug"]
     checklist_title = plan["wiki_outputs"]["checklist_title"]
 
-    draft = build_comparison_draft(artifacts.raw_report_body, notebook_run.qa["answer"], title=comparison_title)
+    if is_policy_compare:
+        draft = build_comparison_draft(artifacts.raw_report_body, notebook_run.qa["answer"], title=comparison_title)
+        comparison_note = render_comparison_note(draft)
+        comparison_tags = "[ai-ml, education, technology, comparison]"
+        checklist_tags: list[str] | None = None
+        checklist_related: list[str] | None = None
+    else:
+        draft = build_generic_comparison_draft(artifacts.raw_report_body, notebook_run.qa["answer"], title=comparison_title)
+        comparison_note = render_comparison_note(
+            draft,
+            column_labels=("요지", "비고"),
+            section_heading="섹션별 요지",
+        )
+        comparison_tags = "[notebooklm, research, note-wiki]"
+        checklist_tags = ["notebooklm", "research", "question"]
+        checklist_related = ["llm-wiki"]
+
     comparison_content = "\n".join([
         "---",
         f"title: {comparison_title}",
         f"created: {created}",
         f"updated: {created}",
         "type: comparison",
-        "tags: [ai-ml, education, technology, comparison]",
+        f"tags: {comparison_tags}",
         f"source_notes: [{raw_sources_rel}, {raw_report_rel}]",
         "source_urls:",
         *[f"  - {url}" for url in plan["sources"]],
         "---",
         "",
-        render_comparison_note(draft),
+        comparison_note,
     ])
     checklist_content = render_checklist_note(
         draft.checklist,
@@ -191,6 +217,8 @@ def _render_wiki_phase(plan: dict[str, Any], notebook_run: NotebookRunResult, ar
         plan["sources"],
         created,
         title=checklist_title,
+        tags=checklist_tags,
+        related_links=checklist_related,
     )
 
     entity_renders: list[EntityRender] = []
@@ -265,11 +293,23 @@ def _persist_outputs_phase(
         entity_entries.append((entity.slug, entity.summary))
 
     inbox_relative = f"000-Inbox/{_safe_filename(plan['title'])}_{wiki_render.created}.md"
+    if plan.get("workflow") == "policy-compare":
+        inbox_content = render_inbox_summary(plan, notebook_run.notebook_id, artifacts.artifacts_dir)
+    else:
+        wiki_links = [wiki_render.comparison_slug, wiki_render.checklist_slug]
+        wiki_links.extend(entity.slug for entity in wiki_render.entity_renders)
+        inbox_content = render_generic_inbox_summary(
+            plan,
+            notebook_run.notebook_id,
+            artifacts.artifacts_dir,
+            qmd_collection=cfg.qmd_collection,
+            wiki_links=wiki_links,
+        )
     generated_files.append(
         GeneratedFile(
             relative_path=inbox_relative,
             target_path=cfg.obsidian_vault / inbox_relative,
-            content=render_inbox_summary(plan, notebook_run.notebook_id, artifacts.artifacts_dir),
+            content=inbox_content,
         )
     )
 
@@ -336,7 +376,7 @@ def _run_plan(
     notebook_client = client if client is not None else NotebookLMRunner(cfg.notebooklm_command)
     notebook_run = _run_notebook_phase(plan, notebook_client)
     artifacts = _export_artifacts_phase(cfg, notebook_client, notebook_run)
-    wiki_render = _render_wiki_phase(plan, notebook_run, artifacts)
+    wiki_render = _render_wiki_phase(plan, notebook_run, artifacts, cfg)
     persist_result = _persist_outputs_phase(cfg, plan, notebook_run, artifacts, wiki_render)
     _update_indexes_phase(cfg, plan, notebook_run, wiki_render, persist_result)
 
