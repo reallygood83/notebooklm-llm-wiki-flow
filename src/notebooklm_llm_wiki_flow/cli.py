@@ -193,6 +193,7 @@ def note_wiki_command(
     prompt: str,
     config: str | None = typer.Option(None, help="Optional config file"),
     source: list[str] | None = typer.Option(None, '--source', help='Additional source URL'),
+    url: list[str] | None = typer.Option(None, '--url', help='Alias for --source'),
     title: str | None = typer.Option(None, '--title', help='Optional note title'),
     vault: Path | None = typer.Option(None, '--vault', help='Override Obsidian vault path'),
     wiki_path: Path | None = typer.Option(None, '--wiki-path', help='Override LLM Wiki path'),
@@ -206,7 +207,7 @@ def note_wiki_command(
         vault=vault,
         wiki_path=wiki_path,
     )
-    plan = build_note_wiki_plan(prompt, title=title, sources=source or [])
+    plan = build_note_wiki_plan(prompt, title=title, sources=(source or []) + (url or []))
     if not plan['sources'] and not dry_run:
         raise typer.BadParameter(
             'No source URLs found. Include URLs in the prompt or pass one or more --source values.',
