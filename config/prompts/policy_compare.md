@@ -1,16 +1,29 @@
-Compare the providers across:
-- data ownership
-- output ownership
-- model training defaults
-- retention and deletion
-- minors and student safety
-- academic integrity
-- high-stakes human review
-- enterprise controls
-- compliance posture
-- indemnity and liability
+# 정책·문서 비교 분석 기준
 
-Then produce:
-1. a comparison page
-2. a checklist for an education vertical AI company
-3. entity updates for each provider
+이 파일은 Claude가 두 개 이상의 정책·규정·문서를 비교 분석할 때 참조하는 기준입니다.
+
+## 비교 시 반드시 확인할 항목
+
+- **데이터·정보 소유권** — 누가 최종 소유권을 갖는가?
+- **출력물 소유권** — AI가 생성한 결과물의 귀속 주체
+- **학습·훈련 기본값** — 입력 데이터가 모델 학습에 활용되는지 여부와 기본 설정
+- **보존·삭제 기간** — 데이터 보존 기간과 삭제 절차
+- **취약계층 보호** — 학생·미성년자 등 보호 대상에 대한 특별 조항
+- **고위험 의사결정 검토** — 자동화 판단이 아닌 사람이 검토해야 하는 기준
+- **거버넌스·통제** — 접근 권한, 감사 로그, 관리자 제어 체계
+- **법적 준수·컴플라이언스** — 관련 법령 준수 여부와 인증 현황
+- **배상·면책·법적 책임** — 문제 발생 시 책임 소재와 배상 구조
+- **학술 윤리·연구 무결성** — 학술 목적 사용 시 적용되는 특별 기준 (GIST 맥락)
+
+## 반드시 생성할 산출물
+
+1. **비교 페이지** — 항목별 대조표 형식으로 핵심 차이를 정리
+2. **실행 체크리스트** — 창훈님이 즉시 업무에 적용할 수 있는 확인 항목
+3. **엔티티 업데이트** — 비교 대상별 개별 지식 페이지 갱신 또는 생성
+
+## 분석 시 주의사항
+
+- 홍보성 내용과 실제 약관·규정 내용을 명확히 구분한다.
+- "기본값(default)"과 "옵션(optional)" 설정을 혼동하지 않는다.
+- 출처(URL, 문서명, 버전, 날짜)를 반드시 명시한다.
+- 불명확한 항목은 "확인 필요"로 표시하고 추측하지 않는다.

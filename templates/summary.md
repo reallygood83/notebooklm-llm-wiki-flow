@@ -7,7 +7,8 @@ tags: {{ tags }}
 sources: {{ sources }}
 ---
 
-# {{ title }}
+## {{ title }}
 
 ## Summary
+
 {{ summary }}
