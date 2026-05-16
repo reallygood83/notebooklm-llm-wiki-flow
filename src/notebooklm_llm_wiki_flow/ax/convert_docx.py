@@ -92,6 +92,14 @@ def convert_md_to_docx(md_path: Path, docx_path: Path | None = None) -> Path:
                             table.cell(ri, ci).text = clean
                     i = next_i
                     continue
+                # `|`로 시작하지만 유효한 표 행이 아닌 라인(잘못된 표 row, |---| 단독 등).
+                # 조용히 사라지지 않도록 텍스트 단락으로 보존하고 경고를 남긴다.
+                LOG.warning(
+                    "Pipe-prefixed line not parseable as table; rendering as text: %r",
+                    line,
+                )
+                p = doc.add_paragraph()
+                _add_runs_with_bold(p, line)
                 i += 1
                 continue
 

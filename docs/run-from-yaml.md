@@ -24,10 +24,10 @@ With `run-from-yaml`:
 - `report_append`
 - `question` (optional)
 - `wiki_outputs`
-- `comparison_slug`
-- `comparison_title`
-- `checklist_slug`
-- `checklist_title`
+  - `comparison_slug`
+  - `comparison_title`
+  - `checklist_slug`
+  - `checklist_title`
 - `entities` (optional)
 
 ## Example
