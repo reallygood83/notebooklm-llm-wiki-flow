@@ -46,15 +46,14 @@ Text:
     except Exception as e:
         raise RuntimeError(f"Gemini classification API call failed: {e}") from e
 
-    category = (response.text or "").strip().upper()
-    if "WORK" in category:
-        return "WORK"
-    if "PERSONA" in category:
-        return "PERSONA"
-    if "RESOURCE" in category:
-        return "RESOURCE"
+    # exact match로 첫 토큰만 검사. `in` 부분일치는 'WORKFLOW'·'PERSONAL'·'OUTSOURCES'
+    # 같은 응답이 잘못 매칭되어 오라우팅을 일으킨다.
+    raw = (response.text or "").strip().upper()
+    first_token = raw.split()[0] if raw.split() else ""
+    if first_token in {"WORK", "PERSONA", "RESOURCE"}:
+        return first_token
     raise ValueError(
-        f"Gemini returned unexpected category: {category!r}. "
+        f"Gemini returned unexpected category: {raw!r}. "
         "Expected one of WORK / PERSONA / RESOURCE."
     )
 
@@ -77,6 +76,11 @@ def route_file(file_path: Path, vault_dir: Path) -> Path:
         target_dir.mkdir(parents=True, exist_ok=True)
 
         dest_path = target_dir / file_path.name
+        if dest_path.exists():
+            raise FileExistsError(
+                f"Destination already exists: {dest_path}. Aborting route to prevent "
+                "overwriting existing content (silent data loss)."
+            )
         shutil.move(str(file_path), str(dest_path))
 
         LOG.info(f"Routed: {file_path.name} -> {category}")
