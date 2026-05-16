@@ -74,7 +74,9 @@ def inject_md_into_hwpx(md_path: Path, template_path: Path, output_path: Path) -
             suffix = match.group(4)
             return f"{prefix}{new_content}{suffix}"
 
-        updated_xml, count = SECTION_RE.subn(_swap, xml_content)
+        # count=1 — 다중 섹션이 있는 템플릿에서 모든 section을 동일 본문으로 덮어쓰지
+        # 않도록 첫 매치만 치환. (bug_033)
+        updated_xml, count = SECTION_RE.subn(_swap, xml_content, count=1)
         if count == 0:
             # first_match이 있었으니 도달 불가하지만 방어적으로 raise
             raise RuntimeError(
