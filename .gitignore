@@ -15,3 +15,6 @@ htmlcov/
 .ruff_cache/
 docs/.pdca-*.json
 uv.lock
+
+# 임시 작업 폴더(검증·실험용, commit 대상 아님)
+scratch/
