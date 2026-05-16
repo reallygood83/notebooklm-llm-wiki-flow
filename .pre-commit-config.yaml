@@ -11,3 +11,9 @@ repos:
         additional_dependencies:
           - types-PyYAML>=6.0.12.20250516
         files: ^src/notebooklm_llm_wiki_flow/
+  - repo: https://github.com/igorshubovych/markdownlint-cli2
+    rev: v0.17.2
+    hooks:
+      - id: markdownlint-cli2
+        additional_dependencies:
+          - markdownlint-cli2-formatter-pretty

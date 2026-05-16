@@ -1,0 +1,13 @@
+{
+    "python.defaultInterpreterPath": "./.venv/bin/python3",
+    "python.interpreterPath": "./.venv/bin/python3",
+    "python.analysis.venvPath": ".",
+    "python.analysis.venv": ".venv",
+    "python.analysis.extraPaths": [
+        "src"
+    ],
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.typeCheckingMode": "basic",
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "python.analysis.useLibraryCodeForTypes": true
+}

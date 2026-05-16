@@ -1,0 +1,18 @@
+# NLWFLOW_* environment variables override values in this file.
+# Precedence: environment variables > project.yaml > .env > defaults.
+project_name: education-policy-research
+obsidian_vault: "/Users/choichanghoon/Obsidian Vault/My Vault"
+wiki_path: "/Users/choichanghoon/Obsidian Vault/My Vault/LLM-Wiki"
+qmd_collection: learningmaster
+artifacts_root: ./artifacts
+notebooklm_command: "/Users/choichanghoon/Obsidian Vault/AURA_Automation/nlwflow-repo/.venv/bin/notebooklm"
+qmd_command: qmd
+prompts:
+  llm_wiki_priority: ./config/prompts/llm_wiki_priority.md
+  policy_compare: ./config/prompts/policy_compare.md
+workflow:
+  update_qmd_after_write: true
+  create_share_note: false
+  create_entity_pages: true
+  create_comparison_page: true
+  create_checklist_page: true
