@@ -59,10 +59,14 @@ def install_claude_skill(
     dest.write_text(content, encoding="utf-8")
 
     # 프롬프트 동봉 설치 (스킬 step 0이 외부 디렉터리에서도 작동하도록)
+    # force=False 일 때 기존 프롬프트가 있으면 보존(사용자 편집본을 잃지 않기 위함).
     prompts_dir = root / PROMPTS_SUBDIR
     prompts_dir.mkdir(parents=True, exist_ok=True)
     for name in PROMPT_FILENAMES:
+        prompt_target = prompts_dir / name
+        if prompt_target.exists() and not force:
+            continue
         prompt_text = _read_packaged_prompt(name)
-        (prompts_dir / name).write_text(prompt_text, encoding="utf-8")
+        prompt_target.write_text(prompt_text, encoding="utf-8")
 
     return dest
