@@ -94,7 +94,7 @@ argument-hint: <research prompt with URLs or topic>
 ### 6. 결과물 라우팅 (Obsidian 저장 위치)
 
 실행이 완료되면, 생성된 결과물을 **도메인(work/persona)에 맞는 폴더**로 배치한다.
-Obsidian Vault 루트: `/Users/choichanghoon/Obsidian Vault/My Vault/`
+Obsidian Vault 루트: `$NLWFLOW_OBSIDIAN_VAULT` 환경변수 또는 `config/project.yaml`의 `obsidian_vault` 값을 사용한다. (예: `~/Obsidian Vault/My Vault/`)
 
 #### work 도메인인 경우
 

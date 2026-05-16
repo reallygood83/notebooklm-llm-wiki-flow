@@ -75,7 +75,10 @@ def route(
     vault: Optional[Path] = typer.Option(
         None,
         "--vault",
-        help="Obsidian vault root. Falls back to $AURA_VAULT_PATH / $NLWFLOW_VAULT_PATH.",
+        help=(
+            "Obsidian vault root. Falls back to $NLWFLOW_OBSIDIAN_VAULT, "
+            "$AURA_VAULT_PATH, or $NLWFLOW_VAULT_PATH."
+        ),
     ),
 ) -> None:
     """Intelligently route a Markdown file within the PARA+ structure."""

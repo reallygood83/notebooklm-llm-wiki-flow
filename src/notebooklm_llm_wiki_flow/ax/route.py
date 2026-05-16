@@ -20,12 +20,16 @@ def classify_content(content: str) -> str:
 
     Key 부재나 API 실패는 'RESOURCE'로 무음 폴백하지 않고 예외를 발생시킨다.
     잘못된 분류로 사용자 파일이 의도와 다른 폴더로 이동하는 것을 방지하기 위함.
+
+    표준 변수명은 ``GOOGLE_API_KEY``(google-genai SDK 및 nlwflow-repo .env와 일치).
+    ``GEMINI_API_KEY``도 하위 호환으로 수용한다.
     """
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "GEMINI_API_KEY environment variable is required for classification. "
-            "Set it before running `nlwflow ax route` to avoid silent misclassification."
+            "GOOGLE_API_KEY (또는 GEMINI_API_KEY) environment variable is required "
+            "for classification. Set it before running `nlwflow ax route` to avoid "
+            "silent misclassification."
         )
 
     client = genai.Client(api_key=api_key)

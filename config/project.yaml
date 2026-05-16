@@ -1,11 +1,17 @@
 # NLWFLOW_* environment variables override values in this file.
 # Precedence: environment variables > project.yaml > .env > defaults.
+#
+# 본 파일은 example/template입니다. 실제 사용자 경로는 다음 환경변수로 주입하세요:
+#   NLWFLOW_OBSIDIAN_VAULT="$HOME/Obsidian Vault/My Vault"
+#   NLWFLOW_WIKI_PATH="$HOME/Obsidian Vault/My Vault/LLM-Wiki"
+#   NLWFLOW_NOTEBOOKLM_COMMAND="$(pwd)/.venv/bin/notebooklm"
+# 또는 본인 환경에 맞게 아래 값을 수정해 사용. 절대경로는 commit 대상이 아님.
 project_name: education-policy-research
-obsidian_vault: "/Users/choichanghoon/Obsidian Vault/My Vault"
-wiki_path: "/Users/choichanghoon/Obsidian Vault/My Vault/LLM-Wiki"
+obsidian_vault: "${HOME}/Obsidian Vault/My Vault"
+wiki_path: "${HOME}/Obsidian Vault/My Vault/LLM-Wiki"
 qmd_collection: learningmaster
 artifacts_root: ./artifacts
-notebooklm_command: "/Users/choichanghoon/Obsidian Vault/AURA_Automation/nlwflow-repo/.venv/bin/notebooklm"
+notebooklm_command: ".venv/bin/notebooklm"
 qmd_command: qmd
 prompts:
   llm_wiki_priority: ./config/prompts/llm_wiki_priority.md
