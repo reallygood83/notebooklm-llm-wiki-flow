@@ -9,6 +9,7 @@ from typing import Optional
 import typer
 from dotenv import load_dotenv
 from rich import print
+from rich.markup import escape
 
 from .ax.convert_docx import convert_md_to_docx
 from .ax.convert_hwpx import inject_md_into_hwpx
@@ -29,7 +30,8 @@ def _resolve_vault(explicit: Optional[Path]) -> Path:
     개인 경로 하드코딩은 제거되어 있다.
     """
     if explicit is not None:
-        return explicit
+        # bug #5: env 분기와 대칭으로 `--vault '~/...'`도 셸 확장이 안 된 경우 해석.
+        return explicit.expanduser()
     env_path = (
         os.environ.get("NLWFLOW_OBSIDIAN_VAULT")
         or os.environ.get("AURA_VAULT_PATH")
@@ -53,7 +55,7 @@ def convert(
     """Convert Markdown to administrative formats (DOCX, HWPX)."""
     if format == "docx":
         result = convert_md_to_docx(input_file, output)
-        print(f"[bold green]Converted to DOCX:[/bold green] {result}")
+        print(f"[bold green]Converted to DOCX:[/bold green] {escape(str(result))}")
     elif format == "hwpx":
         if not template:
             print("[bold red]Error:[/bold red] HWPX conversion requires a --template file.")
@@ -61,9 +63,11 @@ def convert(
 
         out_path = output or input_file.with_suffix(".hwpx")
         result = inject_md_into_hwpx(input_file, template, out_path)
-        print(f"[bold green]Converted to HWPX (Surgical):[/bold green] {result}")
+        print(
+            f"[bold green]Converted to HWPX (Surgical):[/bold green] {escape(str(result))}"
+        )
     else:
-        print(f"[bold red]Error:[/bold red] Unsupported format: {format}")
+        print(f"[bold red]Error:[/bold red] Unsupported format: {escape(format)}")
         raise typer.Exit(1)
 
 
@@ -75,7 +79,7 @@ def ingest(
     """Ingest a document (HWPX, PDF, etc.) into Markdown."""
     target = output_dir or input_file.parent
     result = ingest_file(input_file, target)
-    print(f"[bold green]Ingested:[/bold green] {result}")
+    print(f"[bold green]Ingested:[/bold green] {escape(str(result))}")
 
 
 @ax_app.command("route")
@@ -93,7 +97,7 @@ def route(
     """Intelligently route a Markdown file within the PARA+ structure."""
     vault_root = _resolve_vault(vault)
     result = route_file(input_file, vault_root)
-    print(f"[bold green]Routed to:[/bold green] {result}")
+    print(f"[bold green]Routed to:[/bold green] {escape(str(result))}")
 
 @ax_app.command("doctor")
 def ax_doctor() -> None:

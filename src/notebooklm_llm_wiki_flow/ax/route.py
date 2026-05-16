@@ -67,6 +67,14 @@ def route_file(file_path: Path, vault_dir: Path) -> Path:
     if not file_path.is_file():
         raise FileNotFoundError(f"Source file not found or not a regular file: {file_path}")
 
+    # vault 경로 오타로 잘못된 위치에 새 디렉터리 트리가 생기는 것을 차단.
+    # 진짜 vault라면 사용자가 미리 만든 디렉터리여야 한다.
+    if not vault_dir.is_dir():
+        raise FileNotFoundError(
+            f"Vault root does not exist or is not a directory: {vault_dir}. "
+            "Pass --vault to a real Obsidian vault root or set NLWFLOW_OBSIDIAN_VAULT."
+        )
+
     with step(LOG, f"route-{file_path.name}"):
         content = file_path.read_text(encoding="utf-8")
         category = classify_content(content)
