@@ -8,6 +8,7 @@ import typer
 from rich import print
 
 from . import __version__
+from .ax_cli import ax_app
 from .claude_skill import install_claude_skill
 from .config import load_config
 from .flow import run_from_yaml, run_plan, run_policy_compare
@@ -249,6 +250,8 @@ def score_report(report_path: Path, json_output: bool = typer.Option(False, '--j
     print("Bullets:")
     for bullet in payload['bullets']:
         print(f"- {bullet}")
+
+app.add_typer(ax_app, name="ax")
 
 
 if __name__ == '__main__':

@@ -1,0 +1,104 @@
+"""Markdown to DOCX High-Precision Converter.
+"""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+from typing import List, Tuple
+
+from docx import Document
+from docx.shared import Pt
+
+from .common import get_logger, step
+
+LOG = get_logger("ax.docx")
+
+HEADING_RE = re.compile(r"^(#{1,9})\s+(.*)$")
+TABLE_SEP_RE = re.compile(r"^\|[\s:\-|]*\|$")
+BOLD_SPLIT_RE = re.compile(r"(\*\*.*?\*\*)")
+
+def _parse_md_table(lines: List[str], start_idx: int) -> Tuple[List[List[str]], int]:
+    rows: List[List[str]] = []
+    i = start_idx
+    while i < len(lines):
+        line = lines[i].strip()
+        if not (line.startswith("|") and line.endswith("|")):
+            break
+        if TABLE_SEP_RE.match(line):
+            i += 1
+            continue
+        cells = [c.strip() for c in line.split("|")[1:-1]]
+        rows.append(cells)
+        i += 1
+    return rows, i
+
+def _add_runs_with_bold(paragraph, text: str) -> None:
+    for part in BOLD_SPLIT_RE.split(text):
+        if not part:
+            continue
+        if part.startswith("**") and part.endswith("**") and len(part) >= 4:
+            run = paragraph.add_run(part[2:-2])
+            run.bold = True
+        else:
+            paragraph.add_run(part)
+
+def convert_md_to_docx(md_path: Path, docx_path: Path | None = None) -> Path:
+    """Converts a Markdown file to a DOCX file with AX standards."""
+    if not md_path.is_file():
+        raise FileNotFoundError(f"Markdown file not found: {md_path}")
+
+    out_path = docx_path or md_path.with_suffix(".docx")
+
+    with step(LOG, "init-document"):
+        doc = Document()
+        normal = doc.styles["Normal"]
+        # Standard administrative font for HWP/MS Word compatibility
+        normal.font.name = "Malgun Gothic"
+        normal.font.size = Pt(10)
+
+    with step(LOG, "read-markdown"):
+        lines = md_path.read_text(encoding="utf-8").splitlines()
+
+    with step(LOG, "build-body"):
+        i = 0
+        while i < len(lines):
+            line = lines[i].strip()
+
+            if not line:
+                doc.add_paragraph()
+                i += 1
+                continue
+
+            heading_match = HEADING_RE.match(line)
+            if heading_match:
+                level = min(len(heading_match.group(1)), 9)
+                text = heading_match.group(2)
+                doc.add_heading(text, level=level)
+                i += 1
+                continue
+
+            if line.startswith("|"):
+                rows, next_i = _parse_md_table(lines, i)
+                if rows:
+                    cols = max(len(r) for r in rows)
+                    rows = [r + [""] * (cols - len(r)) for r in rows]
+                    table = doc.add_table(rows=len(rows), cols=cols)
+                    table.style = "Table Grid"
+                    for ri, row in enumerate(rows):
+                        for ci, cell_text in enumerate(row):
+                            clean = cell_text.replace("<br>", "\n").replace("**", "")
+                            table.cell(ri, ci).text = clean
+                    i = next_i
+                    continue
+                i += 1
+                continue
+
+            p = doc.add_paragraph()
+            _add_runs_with_bold(p, line)
+            i += 1
+
+    with step(LOG, "save-docx"):
+        doc.save(out_path)
+
+    return out_path

@@ -18,6 +18,8 @@ dependencies = [
   "python-dotenv>=1.0.1",
   "Jinja2>=3.1.4",
   "rich>=14.1.0",
+  "python-docx>=1.1.0",
+  "google-genai>=2.3.0",
 ]
 
 [project.optional-dependencies]
@@ -36,6 +38,7 @@ notebooklm = [
 
 [project.scripts]
 nlwflow = "notebooklm_llm_wiki_flow.cli:app"
+gemini = "notebooklm_llm_wiki_flow.gemini_cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/notebooklm_llm_wiki_flow"]
