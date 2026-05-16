@@ -38,7 +38,8 @@ notebooklm = [
 
 [project.scripts]
 nlwflow = "notebooklm_llm_wiki_flow.cli:app"
-gemini = "notebooklm_llm_wiki_flow.gemini_cli:app"
+# bug_017: 'gemini'는 Google 공식 @google/gemini-cli와 PATH 충돌하므로 nlwflow-gemini로 명명.
+nlwflow-gemini = "notebooklm_llm_wiki_flow.gemini_cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/notebooklm_llm_wiki_flow"]
