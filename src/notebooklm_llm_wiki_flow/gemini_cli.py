@@ -25,7 +25,11 @@ def chat(
     prompt: str = typer.Argument(..., help="Question or instruction for Gemini"),
     file: Optional[Path] = typer.Option(None, "--file", "-f", help="Optional file to read and include in context"),
     model: str = typer.Option("gemini-flash-latest", "--model", "-m", help="Gemini model to use"),
-    stream: bool = typer.Option(True, "--no-stream", help="Disable streaming response"),
+    stream: bool = typer.Option(
+        True,
+        "--stream/--no-stream",
+        help="Stream the response (default). Use --no-stream for a single Markdown render.",
+    ),
 ) -> None:
     """Ask Gemini anything. Supports file context."""
     api_key = get_api_key()

@@ -5,6 +5,9 @@ from pathlib import Path
 
 SKILL_FILENAME = "note-wiki.md"
 _PACKAGE_SKILLS = "notebooklm_llm_wiki_flow.skills"
+_PACKAGE_PROMPTS = "notebooklm_llm_wiki_flow.prompts"
+PROMPT_FILENAMES = ("llm_wiki_priority.md", "policy_compare.md")
+PROMPTS_SUBDIR = "nlwflow-prompts"
 
 
 def _read_packaged_skill() -> str:
@@ -15,12 +18,25 @@ def _read_packaged_skill() -> str:
     )
 
 
+def _read_packaged_prompt(name: str) -> str:
+    return (
+        resources.files(_PACKAGE_PROMPTS)
+        .joinpath(name)
+        .read_text(encoding="utf-8")
+    )
+
+
 def install_claude_skill(
     target_dir: str | Path | None = None,
     *,
     force: bool = False,
     source_path: str | Path | None = None,
 ) -> Path:
+    """note-wiki 스킬과 동반 프롬프트 2종을 함께 설치한다.
+
+    프롬프트는 ``<target_dir>/nlwflow-prompts/`` 아래에 동봉되어, 스킬 step 0이
+    실행 디렉터리와 무관하게 동일 경로에서 프롬프트를 읽도록 보장한다.
+    """
     if source_path is not None:
         src = Path(source_path).expanduser().resolve()
         if not src.is_file():
@@ -41,4 +57,12 @@ def install_claude_skill(
             f"Skill already installed at {dest}. Use force=True to overwrite."
         )
     dest.write_text(content, encoding="utf-8")
+
+    # 프롬프트 동봉 설치 (스킬 step 0이 외부 디렉터리에서도 작동하도록)
+    prompts_dir = root / PROMPTS_SUBDIR
+    prompts_dir.mkdir(parents=True, exist_ok=True)
+    for name in PROMPT_FILENAMES:
+        prompt_text = _read_packaged_prompt(name)
+        (prompts_dir / name).write_text(prompt_text, encoding="utf-8")
+
     return dest

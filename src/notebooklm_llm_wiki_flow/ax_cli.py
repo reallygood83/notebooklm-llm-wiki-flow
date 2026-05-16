@@ -1,8 +1,8 @@
-"""AURA Administrative (AX) CLI.
-"""
+"""AURA Administrative (AX) CLI."""
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -15,6 +15,24 @@ from .ax.ingest import ingest_file
 from .ax.route import route_file
 
 ax_app = typer.Typer(help="AURA Administrative (AX) tools")
+
+
+def _resolve_vault(explicit: Optional[Path]) -> Path:
+    """vault 경로를 명시적 인자 → 환경변수 → 에러 순으로 해석.
+
+    개인 경로 하드코딩을 제거. AURA_VAULT_PATH(또는 NLWFLOW_VAULT_PATH)를
+    설정해 사용자 환경마다 달리 동작하도록 한다.
+    """
+    if explicit is not None:
+        return explicit
+    env_path = os.environ.get("AURA_VAULT_PATH") or os.environ.get("NLWFLOW_VAULT_PATH")
+    if env_path:
+        return Path(env_path).expanduser()
+    raise typer.BadParameter(
+        "Vault path not provided. Pass --vault or set AURA_VAULT_PATH "
+        "(or NLWFLOW_VAULT_PATH) to your Obsidian vault root."
+    )
+
 
 @ax_app.command("convert")
 def convert(
@@ -31,13 +49,14 @@ def convert(
         if not template:
             print("[bold red]Error:[/bold red] HWPX conversion requires a --template file.")
             raise typer.Exit(1)
-        
+
         out_path = output or input_file.with_suffix(".hwpx")
         result = inject_md_into_hwpx(input_file, template, out_path)
         print(f"[bold green]Converted to HWPX (Surgical):[/bold green] {result}")
     else:
         print(f"[bold red]Error:[/bold red] Unsupported format: {format}")
         raise typer.Exit(1)
+
 
 @ax_app.command("ingest")
 def ingest(
@@ -47,24 +66,22 @@ def ingest(
     """Ingest a document (HWPX, PDF, etc.) into Markdown."""
     target = output_dir or input_file.parent
     result = ingest_file(input_file, target)
-    if result:
-        print(f"[bold green]Ingested:[/bold green] {result}")
-    else:
-        print("[bold red]Ingestion failed.[/bold red]")
+    print(f"[bold green]Ingested:[/bold green] {result}")
+
 
 @ax_app.command("route")
 def route(
     input_file: Path = typer.Argument(..., help="Markdown file to route"),
-    vault: Optional[Path] = typer.Option(None, "--vault", help="Obsidian vault root"),
+    vault: Optional[Path] = typer.Option(
+        None,
+        "--vault",
+        help="Obsidian vault root. Falls back to $AURA_VAULT_PATH / $NLWFLOW_VAULT_PATH.",
+    ),
 ) -> None:
     """Intelligently route a Markdown file within the PARA+ structure."""
-    # Try to find vault root if not provided
-    vault_root = vault or Path("/Users/choichanghoon/Obsidian Vault/My Vault")
+    vault_root = _resolve_vault(vault)
     result = route_file(input_file, vault_root)
-    if result:
-        print(f"[bold green]Routed to:[/bold green] {result}")
-    else:
-        print("[bold red]Routing failed.[/bold red]")
+    print(f"[bold green]Routed to:[/bold green] {result}")
 
 @ax_app.command("doctor")
 def ax_doctor() -> None:
