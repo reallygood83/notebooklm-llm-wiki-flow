@@ -13,29 +13,30 @@ from .common import escape_xml_text, get_logger, read_hwpx, step, write_hwpx_fro
 
 LOG = get_logger("ax.hwpx")
 
-# Matches the contents of hp:section (BodyText)
-# We use a broad regex to handle different namespaces (hp, hs)
-SECTION_RE = re.compile(r"(<(?:hp|hs):section[^>]*>)(.*?)(</(?:hp|hs):section>)", re.DOTALL)
+# Matches the contents of hp:section (BodyText). 매치된 네임스페이스 prefix(hp/hs)를 명시
+# 캡처해 본문 생성 시에도 동일 ns를 쓰도록 한다.
+SECTION_RE = re.compile(
+    r"(<(?P<ns>hp|hs):section[^>]*>)(.*?)(</(?P=ns):section>)",
+    re.DOTALL,
+)
 
-def md_to_hwpx_xml_fragment(md_text: str) -> str:
-    """Converts simple Markdown to HWPX XML fragments (hp:p, hp:run)."""
+
+def md_to_hwpx_xml_fragment(md_text: str, ns: str = "hp") -> str:
+    """Markdown을 HWPX XML fragment(<ns>:p, <ns>:run)로 변환. ns는 'hp' 또는 'hs'."""
     lines = md_text.splitlines()
     xml_lines = []
-    
+
     for line in lines:
         line = line.strip()
         if not line:
-            # Empty paragraph
-            xml_lines.append("<hp:p><hp:run><hp:t/></hp:run></hp:p>")
+            xml_lines.append(f"<{ns}:p><{ns}:run><{ns}:t/></{ns}:run></{ns}:p>")
             continue
-            
-        # Basic paragraph wrap
-        # Note: A real converter would handle headings/tables here, 
-        # but for surgical injection into complex templates, 
-        # usually simpler is better or we use pre-formatted fragments.
+
         escaped = escape_xml_text(line)
-        xml_lines.append(f"<hp:p><hp:run><hp:t>{escaped}</hp:t></hp:run></hp:p>")
-        
+        xml_lines.append(
+            f"<{ns}:p><{ns}:run><{ns}:t>{escaped}</{ns}:t></{ns}:run></{ns}:p>"
+        )
+
     return "\n".join(xml_lines)
 
 def inject_md_into_hwpx(md_path: Path, template_path: Path, output_path: Path) -> Path:
@@ -45,32 +46,41 @@ def inject_md_into_hwpx(md_path: Path, template_path: Path, output_path: Path) -
         entries = read_hwpx(str(template_path))
         
     with step(LOG, "transform-content"):
-        # 1. Convert MD to HWPX fragments
-        new_content = md_to_hwpx_xml_fragment(md_text)
-        
-        # 2. Find section0.xml (usually the first section)
+        # 1. Find section0.xml (usually the first section)
         section_key = "Contents/section0.xml"
         if section_key not in entries:
-            # Try to find any sectionX.xml
             for k in entries.keys():
                 if k.startswith("Contents/section") and k.endswith(".xml"):
                     section_key = k
                     break
             else:
                 raise KeyError("Could not find any section XML in template")
-        
+
         xml_content = entries[section_key].decode("utf-8")
-        
-        # 3. Surgical Swap
-        def _swap(match: re.Match[str]) -> str:
-            prefix, _, suffix = match.groups()
+
+        # 2. 매치된 네임스페이스를 먼저 확인하여 동일 ns로 본문 생성
+        first_match = SECTION_RE.search(xml_content)
+        if first_match is None:
+            raise ValueError(
+                f"HWPX injection failed: <hp|hs:section> tag not found in {section_key}. "
+                "Template structure not supported; aborting to avoid silent content loss."
+            )
+        ns = first_match.group("ns")
+        new_content = md_to_hwpx_xml_fragment(md_text, ns=ns)
+
+        # 3. Surgical Swap (네임스페이스 일관성 확보 후 안전한 치환)
+        def _swap(match: "re.Match[str]") -> str:
+            prefix = match.group(1)
+            suffix = match.group(4)
             return f"{prefix}{new_content}{suffix}"
-            
+
         updated_xml, count = SECTION_RE.subn(_swap, xml_content)
         if count == 0:
-            LOG.warning("Could not find section tag for injection. Appending to end of file (risky).")
-            # Fallback logic if needed, but usually templates have sections.
-            
+            # first_match이 있었으니 도달 불가하지만 방어적으로 raise
+            raise RuntimeError(
+                "HWPX section swap produced 0 replacements despite earlier match."
+            )
+
         entries[section_key] = updated_xml.encode("utf-8")
         
     with step(LOG, "package-hwpx"):
