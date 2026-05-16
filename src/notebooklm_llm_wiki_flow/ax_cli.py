@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+from dotenv import load_dotenv
 from rich import print
 
 from .ax.convert_docx import convert_md_to_docx
@@ -14,23 +15,31 @@ from .ax.convert_hwpx import inject_md_into_hwpx
 from .ax.ingest import ingest_file
 from .ax.route import route_file
 
+# nlwflow-repo의 .env(GOOGLE_API_KEY 등)를 ax 하위 명령에서도 일관되게 인식하도록 로드.
+load_dotenv()
+
 ax_app = typer.Typer(help="AURA Administrative (AX) tools")
 
 
 def _resolve_vault(explicit: Optional[Path]) -> Path:
     """vault 경로를 명시적 인자 → 환경변수 → 에러 순으로 해석.
 
-    개인 경로 하드코딩을 제거. AURA_VAULT_PATH(또는 NLWFLOW_VAULT_PATH)를
-    설정해 사용자 환경마다 달리 동작하도록 한다.
+    표준 변수명은 ``NLWFLOW_OBSIDIAN_VAULT``(config.py와 일치). 호환을 위해
+    ``AURA_VAULT_PATH``와 ``NLWFLOW_VAULT_PATH``도 fallback으로 수용한다.
+    개인 경로 하드코딩은 제거되어 있다.
     """
     if explicit is not None:
         return explicit
-    env_path = os.environ.get("AURA_VAULT_PATH") or os.environ.get("NLWFLOW_VAULT_PATH")
+    env_path = (
+        os.environ.get("NLWFLOW_OBSIDIAN_VAULT")
+        or os.environ.get("AURA_VAULT_PATH")
+        or os.environ.get("NLWFLOW_VAULT_PATH")
+    )
     if env_path:
         return Path(env_path).expanduser()
     raise typer.BadParameter(
-        "Vault path not provided. Pass --vault or set AURA_VAULT_PATH "
-        "(or NLWFLOW_VAULT_PATH) to your Obsidian vault root."
+        "Vault path not provided. Pass --vault or set NLWFLOW_OBSIDIAN_VAULT "
+        "(or AURA_VAULT_PATH / NLWFLOW_VAULT_PATH) to your Obsidian vault root."
     )
 
 
