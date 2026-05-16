@@ -18,11 +18,13 @@ argument-hint: <research prompt with URLs or topic>
 아래 두 파일을 읽어서 이번 작업의 품질 기준으로 삼는다.
 이 파일들의 내용은 실행 후 결과를 평가하고 보고할 때 반드시 적용한다.
 
-1. **콘텐츠 품질 기준**: `config/prompts/llm_wiki_priority.md`
+두 파일은 `install_claude_skill` 설치 시 동봉되는 `<스킬 폴더>/nlwflow-prompts/` 경로에서 읽거나, repo 안에서 호출될 경우 `config/prompts/` 상대 경로에서 읽는다.
+
+1. **콘텐츠 품질 기준**: `nlwflow-prompts/llm_wiki_priority.md` (설치 시 동봉) 또는 `config/prompts/llm_wiki_priority.md` (repo)
    - 어떤 정보를 보존하고 어떤 정보를 버릴지 판단하는 우선순위 기준
    - 결과물 품질 체크리스트 포함
 
-2. **비교 분석 기준**: `config/prompts/policy_compare.md`
+2. **비교 분석 기준**: `nlwflow-prompts/policy_compare.md` (설치 시 동봉) 또는 `config/prompts/policy_compare.md` (repo)
    - 두 개 이상의 문서·정책을 비교할 때 반드시 확인할 항목
    - 생성해야 할 산출물 목록 포함
 
