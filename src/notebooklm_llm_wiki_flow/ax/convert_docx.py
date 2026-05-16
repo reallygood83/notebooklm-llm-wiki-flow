@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 from docx import Document
+from docx.oxml.ns import qn
 from docx.shared import Pt
 from docx.text.paragraph import Paragraph
 
@@ -57,6 +58,11 @@ def convert_md_to_docx(md_path: Path, docx_path: Path | None = None) -> Path:
         # Standard administrative font for HWP/MS Word compatibility
         normal.font.name = "Malgun Gothic"
         normal.font.size = Pt(10)
+        # font.name은 w:ascii/w:hAnsi만 설정한다. CJK 글자는 w:eastAsia 슬롯을
+        # 따로 보지 않으면 Asian Theme Font(예: Batang)로 폴백된다. AX 산출물의
+        # 주 콘텐츠가 한국어이므로 명시적으로 동일 폰트를 박아 둔다.
+        rfonts = normal.element.get_or_add_rPr().get_or_add_rFonts()
+        rfonts.set(qn("w:eastAsia"), "Malgun Gothic")
 
     with step(LOG, "read-markdown"):
         lines = md_path.read_text(encoding="utf-8").splitlines()

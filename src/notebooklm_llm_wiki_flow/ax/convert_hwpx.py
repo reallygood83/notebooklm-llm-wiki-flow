@@ -21,6 +21,14 @@ SECTION_RE = re.compile(
 )
 
 
+# OWPML이 요구하는 paragraph/run 필수 속성. header.xml의 paraPr/charPr/style
+# 테이블은 인덱스 0을 기본 엔트리로 두므로, 표준 템플릿에서 안전하게 0을 참조한다.
+# 이 속성과 <linesegarray>가 누락되면 한컴오피스가 "손상된 파일"로 판정해 빈
+# 페이지를 보이거나 열기를 거부한다.
+_P_ATTRS = 'paraPrIDRef="0" styleIDRef="0" pageBreak="0" columnBreak="0" merged="0"'
+_RUN_ATTRS = 'charPrIDRef="0"'
+
+
 def md_to_hwpx_xml_fragment(md_text: str, ns: str = "hp") -> str:
     """Markdown을 HWPX XML fragment(<ns>:p, <ns>:run)로 변환. ns는 'hp' 또는 'hs'."""
     lines = md_text.splitlines()
@@ -29,12 +37,20 @@ def md_to_hwpx_xml_fragment(md_text: str, ns: str = "hp") -> str:
     for line in lines:
         line = line.strip()
         if not line:
-            xml_lines.append(f"<{ns}:p><{ns}:run><{ns}:t/></{ns}:run></{ns}:p>")
+            xml_lines.append(
+                f"<{ns}:p {_P_ATTRS}>"
+                f"<{ns}:run {_RUN_ATTRS}><{ns}:t/></{ns}:run>"
+                f"<{ns}:linesegarray/>"
+                f"</{ns}:p>"
+            )
             continue
 
         escaped = escape_xml_text(line)
         xml_lines.append(
-            f"<{ns}:p><{ns}:run><{ns}:t>{escaped}</{ns}:t></{ns}:run></{ns}:p>"
+            f"<{ns}:p {_P_ATTRS}>"
+            f"<{ns}:run {_RUN_ATTRS}><{ns}:t>{escaped}</{ns}:t></{ns}:run>"
+            f"<{ns}:linesegarray/>"
+            f"</{ns}:p>"
         )
 
     return "\n".join(xml_lines)

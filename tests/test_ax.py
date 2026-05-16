@@ -96,14 +96,23 @@ def test_read_hwpx_missing(tmp_path: Path) -> None:
 
 def test_md_to_hwpx_fragment_default_ns_hp() -> None:
     out = md_to_hwpx_xml_fragment("hello\n\nworld")
-    assert "<hp:p><hp:run><hp:t>hello</hp:t>" in out
-    assert "<hp:p><hp:run><hp:t/></hp:run></hp:p>" in out  # empty line
+    # 본문 텍스트가 보존되는지
+    assert "<hp:t>hello</hp:t>" in out
     assert "<hp:t>world</hp:t>" in out
+    # 빈 줄은 <hp:t/>로 인코딩
+    assert "<hp:t/>" in out
+    # OWPML 필수 속성(한컴오피스 호환): paraPrIDRef / charPrIDRef / linesegarray
+    assert 'paraPrIDRef="0"' in out
+    assert 'styleIDRef="0"' in out
+    assert 'charPrIDRef="0"' in out
+    assert "<hp:linesegarray/>" in out
 
 
 def test_md_to_hwpx_fragment_ns_hs() -> None:
     out = md_to_hwpx_xml_fragment("line", ns="hs")
-    assert "<hs:p><hs:run><hs:t>line</hs:t>" in out
+    assert "<hs:t>line</hs:t>" in out
+    assert 'paraPrIDRef="0"' in out
+    assert "<hs:linesegarray/>" in out
     assert "hp:" not in out
 
 
