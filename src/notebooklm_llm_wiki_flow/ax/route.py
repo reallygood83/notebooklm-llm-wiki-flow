@@ -38,8 +38,10 @@ Text:
     try:
         response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
         category = (response.text or "").strip().upper()
-        if "WORK" in category: return "WORK"
-        if "PERSONA" in category: return "PERSONA"
+        if "WORK" in category:
+            return "WORK"
+        if "PERSONA" in category:
+            return "PERSONA"
         return "RESOURCE"
     except Exception as e:
         LOG.error(f"Gemini classification failed: {e}")

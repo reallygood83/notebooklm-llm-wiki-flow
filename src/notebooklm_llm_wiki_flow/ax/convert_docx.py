@@ -9,6 +9,7 @@ from typing import List, Tuple
 
 from docx import Document
 from docx.shared import Pt
+from docx.text.paragraph import Paragraph
 
 from .common import get_logger, step
 
@@ -33,7 +34,7 @@ def _parse_md_table(lines: List[str], start_idx: int) -> Tuple[List[List[str]], 
         i += 1
     return rows, i
 
-def _add_runs_with_bold(paragraph, text: str) -> None:
+def _add_runs_with_bold(paragraph: Paragraph, text: str) -> None:
     for part in BOLD_SPLIT_RE.split(text):
         if not part:
             continue
@@ -99,6 +100,6 @@ def convert_md_to_docx(md_path: Path, docx_path: Path | None = None) -> Path:
             i += 1
 
     with step(LOG, "save-docx"):
-        doc.save(out_path)
+        doc.save(str(out_path))
 
     return out_path

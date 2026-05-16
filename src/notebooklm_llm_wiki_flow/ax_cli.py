@@ -50,7 +50,7 @@ def ingest(
     if result:
         print(f"[bold green]Ingested:[/bold green] {result}")
     else:
-        print(f"[bold red]Ingestion failed.[/bold red]")
+        print("[bold red]Ingestion failed.[/bold red]")
 
 @ax_app.command("route")
 def route(
@@ -64,7 +64,7 @@ def route(
     if result:
         print(f"[bold green]Routed to:[/bold green] {result}")
     else:
-        print(f"[bold red]Routing failed.[/bold red]")
+        print("[bold red]Routing failed.[/bold red]")
 
 @ax_app.command("doctor")
 def ax_doctor() -> None:

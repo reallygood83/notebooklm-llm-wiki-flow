@@ -11,7 +11,7 @@ import sys
 import time
 import zipfile
 from contextlib import contextmanager
-from typing import Dict, Iterator, Optional, Union
+from typing import Dict, Iterator, Union
 
 MIMETYPE = "application/hwp+zip"
 RootEntries = Dict[str, Union[bytes, str]]

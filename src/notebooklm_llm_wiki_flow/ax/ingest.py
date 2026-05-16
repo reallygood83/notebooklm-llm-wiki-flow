@@ -28,7 +28,7 @@ def ingest_file(input_path: Path, output_dir: Path) -> Path | None:
             env = os.environ.copy()
             env["PATH"] = "/usr/local/bin:" + env.get("PATH", "")
             
-            result = subprocess.run(
+            subprocess.run(
                 ['/usr/local/bin/npx', 'kordoc', str(input_path), '-d', str(output_dir)],
                 capture_output=True, text=True, env=env, check=True
             )

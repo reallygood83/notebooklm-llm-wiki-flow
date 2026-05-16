@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Dict
+from typing import cast
 
-from .common import get_logger, read_hwpx, step, write_hwpx_from_entries, escape_xml_text
+from .common import escape_xml_text, get_logger, read_hwpx, step, write_hwpx_from_entries
 
 LOG = get_logger("ax.hwpx")
 
@@ -62,7 +62,7 @@ def inject_md_into_hwpx(md_path: Path, template_path: Path, output_path: Path) -
         xml_content = entries[section_key].decode("utf-8")
         
         # 3. Surgical Swap
-        def _swap(match: re.Match) -> str:
+        def _swap(match: re.Match[str]) -> str:
             prefix, _, suffix = match.groups()
             return f"{prefix}{new_content}{suffix}"
             
@@ -74,6 +74,6 @@ def inject_md_into_hwpx(md_path: Path, template_path: Path, output_path: Path) -
         entries[section_key] = updated_xml.encode("utf-8")
         
     with step(LOG, "package-hwpx"):
-        write_hwpx_from_entries(entries, str(output_path))
+        write_hwpx_from_entries(cast("dict[str, bytes | str]", entries), str(output_path))
         
     return output_path
