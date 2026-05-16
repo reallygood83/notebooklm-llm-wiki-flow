@@ -41,18 +41,16 @@ def chat(
 
     try:
         if stream:
-            response = client.models.generate_content_stream(model=model, contents=full_prompt)
+            stream_response = client.models.generate_content_stream(model=model, contents=full_prompt)
             console.print("\n[bold blue]Hermes:[/bold blue]")
-            accumulated_text = ""
-            for chunk in response:
+            for chunk in stream_response:
                 chunk_text = chunk.text or ""
-                accumulated_text += chunk_text
                 console.print(chunk_text, end="")
             console.print("\n")
         else:
-            response = client.models.generate_content(model=model, contents=full_prompt)
+            single_response = client.models.generate_content(model=model, contents=full_prompt)
             console.print("\n[bold blue]Hermes:[/bold blue]")
-            console.print(Markdown(response.text))
+            console.print(Markdown(single_response.text or ""))
     except Exception as e:
         console.print(f"[bold red]API Error:[/bold red] {str(e)}")
         raise typer.Exit(code=1)

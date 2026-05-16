@@ -6,6 +6,8 @@
     "MD033": false,  // inline HTML — Obsidian 위키 호환
     "MD041": false,  // 첫 줄 H1 — frontmatter 사용
     "MD024": { "siblings_only": true },  // 동일 헤딩 — 형제 노드에서만 금지
+    "MD029": { "style": "ordered" },  // ordered list 임의 시작 번호 허용
+    "MD032": false,  // blanks-around-lists — 한국어 문서 흐름에 비실용
     "MD036": false,  // emphasis as heading — bold 사용 빈번
     "MD046": false   // code block style — fenced/indented 혼용 허용
   },
