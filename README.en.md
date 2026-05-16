@@ -92,7 +92,7 @@ Core features
 
 Prerequisites
 
-- Python 3.11+
+- Python 3.13+
 - Node.js 20+ and npm (for the qmd indexer; skip with `INSTALL_QMD_GLOBAL=0`)
 - pipx (optional — only needed for the isolated `USE_PIPX=1` path)
 

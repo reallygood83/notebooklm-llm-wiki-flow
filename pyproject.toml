@@ -7,19 +7,19 @@ name = "notebooklm-llm-wiki-flow"
 version = "0.1.0"
 description = "Portable NotebookLM → LLM Wiki → Obsidian → qmd workflow scaffold"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = {text = "MIT"}
 authors = [
   {name = "Moon Jeong"},
 ]
+# Core nlwflow workflow는 ax/* 서브패키지 없이도 동작하도록 base deps는 lean하게 유지.
+# AX administrative converters와 Gemini 직결 CLI가 필요하면 [ax] extras 설치.
 dependencies = [
   "typer>=0.16.0",
   "PyYAML>=6.0.2",
   "python-dotenv>=1.0.1",
   "Jinja2>=3.1.4",
   "rich>=14.1.0",
-  "python-docx>=1.1.0",
-  "google-genai>=2.3.0",
 ]
 
 [project.optional-dependencies]
@@ -34,6 +34,11 @@ dev = [
 notebooklm = [
   "notebooklm-py",
   "playwright>=1.40",
+]
+# AX administrative tooling (DOCX/HWPX 변환, Gemini 분류·CLI)
+ax = [
+  "python-docx>=1.1.0",
+  "google-genai>=2.3.0",
 ]
 
 [project.scripts]
@@ -50,13 +55,13 @@ addopts = "-q --cov=notebooklm_llm_wiki_flow --cov-report=term-missing --cov-fai
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 ignore = ["E501"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 files = ["src/notebooklm_llm_wiki_flow"]
 strict = true

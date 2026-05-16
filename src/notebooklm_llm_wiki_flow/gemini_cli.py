@@ -13,10 +13,16 @@ console = Console()
 
 def get_api_key() -> str:
     load_dotenv()
-    api_key = os.getenv("GOOGLE_API_KEY")
+    # bug #10: ax/route.py와 키 처리 비대칭 해소 — 둘 다 허용.
+    api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
     if not api_key:
-        console.print("[bold red]Error:[/bold red] GOOGLE_API_KEY not found in .env file.")
-        console.print("Please add 'GOOGLE_API_KEY=your_key_here' to your .env file.")
+        console.print(
+            "[bold red]Error:[/bold red] GOOGLE_API_KEY (or GEMINI_API_KEY) "
+            "not found in .env file."
+        )
+        console.print(
+            "Please add 'GOOGLE_API_KEY=your_key_here' to your .env file."
+        )
         raise typer.Exit(code=1)
     return api_key
 

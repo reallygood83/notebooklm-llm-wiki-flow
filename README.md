@@ -95,7 +95,7 @@ LLM Wiki 는 LLM 출력 전체를 저장하는 곳이 아닙니다.
 
 사전 요구사항
 
-- Python 3.11+
+- Python 3.13+
 - Node.js 20+ 와 npm (qmd 인덱서용, `INSTALL_QMD_GLOBAL=0` 으로 건너뛸 수 있음)
 - pipx (옵션 — `USE_PIPX=1` 모드로 격리 설치할 때만 필요)
 

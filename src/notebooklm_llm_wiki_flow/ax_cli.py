@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import os
 from pathlib import Path
 from typing import Optional
@@ -16,10 +17,13 @@ from .ax.convert_hwpx import inject_md_into_hwpx
 from .ax.ingest import ingest_file
 from .ax.route import route_file
 
-# nlwflow-repo의 .env(GOOGLE_API_KEY 등)를 ax 하위 명령에서도 일관되게 인식하도록 로드.
-load_dotenv()
-
 ax_app = typer.Typer(help="AURA Administrative (AX) tools")
+
+
+@ax_app.callback()
+def _ax_bootstrap() -> None:
+    """ax 하위 명령 실행 직전 .env 로드 (모듈 import 시점 부작용 제거)."""
+    load_dotenv()
 
 
 def _resolve_vault(explicit: Optional[Path]) -> Path:
@@ -103,13 +107,18 @@ def route(
 def ax_doctor() -> None:
     """Check AURA administrative environment."""
     print("[bold blue]AURA AX Health Check[/bold blue]")
-    
-    # Check for docx
-    try:
+
+    # importlib.util.find_spec — try/except import는 cli.py:ax_cli eager
+    # import 때문에 docx 누락이면 여기 도달조차 못하는 dead code였음.
+    if importlib.util.find_spec("docx") is not None:
         import docx
+
         print(f"- python-docx: [green]OK[/green] (version {docx.__version__})")
-    except ImportError:
-        print("- python-docx: [red]MISSING[/red]")
-        
+    else:
+        print(
+            "- python-docx: [red]MISSING[/red] — install ax extras: "
+            "[bold]pip install '.[ax]'[/bold]"
+        )
+
     print("- OCF Packager: [green]OK[/green]")
     print("- Surgical Injector: [green]OK[/green]")
