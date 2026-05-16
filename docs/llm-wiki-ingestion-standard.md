@@ -1,12 +1,14 @@
 # LLM Wiki ingestion standard
 
 A successful ingest must create or update:
+
 - raw source pages with provenance
 - entity pages for major organizations
 - comparison pages for side-by-side analysis
 - checklist or query pages for reusable operational decisions
 
 Major content means:
+
 - obligations
 - prohibitions
 - time windows
