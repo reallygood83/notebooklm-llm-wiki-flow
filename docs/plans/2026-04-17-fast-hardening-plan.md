@@ -34,7 +34,9 @@ Files:
 - Test: tests/test_runner_protocol.py
 
 Steps:
+
 1. Create NotebookLMClient Protocol with methods matching the current flow needs:
+
    - create_notebook
    - add_source
    - wait_source
@@ -44,10 +46,13 @@ Steps:
    - ask
    - download_report
    - download_mind_map
+
 2. Add typed exceptions in the same module:
+
    - NotebookLMError
    - NotebookLMCommandError
    - NotebookLMTimeoutError
+
 3. Refactor NotebookLMRunner to implement the protocol and wrap subprocess failures with step-aware context.
 4. Update flow.py so _run_plan accepts a client object or factory instead of constructing NotebookLMRunner inline.
 5. Add unit tests that assert subprocess failures are converted into typed exceptions with command and step metadata.
@@ -71,6 +76,7 @@ Files:
 - Test: tests/test_runner_protocol.py
 
 Steps:
+
 1. Add config fields for source_wait_timeout, artifact_wait_timeout, retry_attempts, and retry_backoff_seconds.
 2. Add tenacity to dependencies.
 3. Apply retry only to external-command methods that are safe to retry.
@@ -99,18 +105,23 @@ Files:
 - Test: tests/test_flow_phases.py
 
 Steps:
+
 1. Create dataclasses for phase outputs:
+
    - NotebookRunResult
    - ArtifactExportResult
    - WikiRenderResult
    - PersistResult
    - IndexUpdateResult
+
 2. Extract private phase functions from _run_plan:
+
    - _run_notebook_phase
    - _export_artifacts_phase
    - _render_wiki_phase
    - _persist_outputs_phase
    - _update_indexes_phase
+
 3. Keep _run_plan as a small coordinator that passes typed results between phases.
 4. Ensure each phase returns explicit paths, created files, and any update metadata.
 5. Add unit tests for each phase using fake inputs rather than real subprocesses.
@@ -133,6 +144,7 @@ Files:
 - Optional doc update: docs/architecture.md
 
 Steps:
+
 1. Move index behavior out of _update_index into a small builder module.
 2. Read the current index once, parse known sections, and rebuild the managed portion deterministically.
 3. Compute total pages dynamically from managed wiki paths instead of hardcoding 13.
@@ -157,6 +169,7 @@ Files:
 - Example output path: artifacts/<notebook_id>/manifest.json
 
 Steps:
+
 1. Write all generated note content into a staging directory under artifacts/<notebook_id>/staging.
 2. Promote staged files into final wiki targets only after all content is ready.
 3. Write manifest.json containing notebook_id, generated files, timestamps, and checksums.
@@ -180,15 +193,18 @@ Files:
 - Modify: src/notebooklm_llm_wiki_flow/flow.py if dependency injection needs small adjustments
 
 Steps:
+
 1. Create a fake client that returns deterministic notebook, source, report, mind-map, and Q&A payloads.
 2. Run the full flow against tmp_path-based wiki and artifact directories.
 3. Assert output files exist:
+
    - raw source page
    - raw report page
    - comparison page
    - checklist page
    - inbox note
    - manifest.json
+
 4. Assert index.md and log.md were updated correctly.
 5. Assert qmd update can be disabled cleanly in tests.
 
@@ -213,10 +229,13 @@ Files:
 - Create: .pre-commit-config.yaml
 
 Steps:
+
 1. Add dev dependencies:
+
    - ruff
    - mypy
    - pytest-cov
+
 2. Add ruff configuration and a minimal mypy strict target for src/notebooklm_llm_wiki_flow.
 3. Set pytest addopts to include coverage and a fail-under target of 80.
 4. Expand CI to a matrix on ubuntu-latest and macos-latest.
@@ -243,6 +262,7 @@ Files:
 - Test: tests/test_config.py
 
 Steps:
+
 1. Remove silent || true from bootstrap steps that must fail loudly.
 2. Keep optional installs explicitly marked as optional rather than silently swallowed.
 3. Add python-dotenv and NLWFLOW_* environment override support in config.py.
@@ -273,6 +293,7 @@ Files:
 - Test: tests/test_policy_compare.py
 
 Steps:
+
 1. Add Jinja2 dependency.
 2. Replace render_openai_entity and render_anthropic_entity hardcoded prose with template rendering from structured input data.
 3. Keep the current summaries as initial fallback seed data only if extracted content is missing.
@@ -296,6 +317,7 @@ Files:
 - Test: tests/test_policy_compare.py
 
 Steps:
+
 1. When table extraction finds no valid rows, emit a warning through logging.
 2. Add a text-based fallback that scans report sections for key policy dimensions.
 3. Surface fallback usage in the final run payload or manifest.
@@ -313,16 +335,19 @@ Commit:
 ## Recommended implementation order
 
 Day 1
+
 1. Task 1
 2. Task 3
 3. Task 6
 
 Day 2
+
 4. Task 4
 5. Task 5
 6. Task 7
 
 Day 3
+
 7. Task 8
 8. Task 9
 9. Task 10

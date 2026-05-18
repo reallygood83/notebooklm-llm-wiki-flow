@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .models import ComparisonDraft, ReportHighlights
-from .report_parser import extract_report_highlights
+from .report_parser import extract_first_markdown_table, extract_report_highlights
 from .template_renderer import render_entity_template
 
 logger = logging.getLogger(__name__)
@@ -72,43 +72,49 @@ def extract_checklist_items(qa_answer: str, report_markdown: str, max_items: int
 
 def _fallback_key_differences(highlights: ReportHighlights) -> list[tuple[str, str, str, str]]:
     key_differences: list[tuple[str, str, str, str]] = []
+    implication = "표 형식 비교가 없어 bullet 기반 fallback"
     for bullet in highlights.bullets:
         cleaned = bullet.strip().lstrip("-* ")
-        if ":" not in cleaned:
+        if not cleaned:
             continue
-        label, detail = cleaned.split(":", 1)
-        owner = label.strip()
-        description = detail.strip()
+        if ":" in cleaned:
+            label, detail = cleaned.split(":", 1)
+            owner = label.strip()
+            description = detail.strip()
+        else:
+            owner = ""
+            description = cleaned
         if not description:
             continue
-        implication = "표 형식 비교가 없어 bullet 기반 fallback 요약을 사용"
-        if "openai" in owner.lower():
-            key_differences.append(("fallback", "", f"OpenAI: {description}", implication))
-        elif "anthropic" in owner.lower():
-            key_differences.append(("fallback", f"Anthropic: {description}", "", implication))
+        key_differences.append((owner or "관찰", description, "", implication))
         if len(key_differences) >= 6:
             break
     return key_differences
 
 
-def build_comparison_draft(report_markdown: str, qa_answer: str, title: str = "Anthropic vs OpenAI policy comparison for education vertical AI") -> ComparisonDraft:
+def build_comparison_draft(
+    report_markdown: str,
+    qa_answer: str,
+    title: str,
+    *,
+    source_count: int | None = None,
+) -> ComparisonDraft:
     rows = extract_core_policy_table_rows(report_markdown)
     highlights = extract_report_highlights(report_markdown)
     checklist = extract_checklist_items(qa_answer, report_markdown)
+    raw_table_block = extract_first_markdown_table(report_markdown)
 
     key_differences: list[tuple[str, str, str, str]] = []
-    for feature, openai, anthropic in rows[:6]:
-        implication = "교육 AI 정책 문서와 제품 제어 항목에 즉시 반영"
-        key_differences.append((feature, anthropic, openai, implication))
+    for feature, value_a, value_b in rows[:6]:
+        implication = "raw report 표 기반 자동 추출, 후속 검토 필요"
+        key_differences.append((feature, value_a, value_b, implication))
 
-    if not key_differences:
+    if not key_differences and not raw_table_block:
         logger.warning("Falling back to bullet-based comparison draft because no policy comparison table rows were parsed.")
         key_differences = _fallback_key_differences(highlights)
 
-    summary_lines = [
-        "NotebookLM report와 Q&A를 바탕으로 생성한 정책 비교 초안이다.",
-        "주요 포인트는 데이터 소유권, 학습 기본값, 보존기간, 안전정책, 고위험 의사결정, 엔터프라이즈 통제다.",
-    ]
+    source_clause = f"{source_count}개 source" if source_count else "여러 source"
+    summary_lines = [f"본 비교는 {source_clause}를 NotebookLM에 ingest한 결과를 정리한 초안이다."]
     if highlights.bullets:
         summary_lines.append("핵심 하이라이트: " + "; ".join(highlights.bullets[:3]))
 
@@ -117,7 +123,8 @@ def build_comparison_draft(report_markdown: str, qa_answer: str, title: str = "A
         summary=" ".join(summary_lines),
         key_differences=key_differences,
         checklist=checklist,
-        related_links=["anthropic", "openai", "llm-wiki"],
+        related_links=[],
+        raw_table_block=raw_table_block,
     )
 
 
@@ -129,14 +136,22 @@ def _yaml_list_lines(key: str, values: list[str]) -> list[str]:
     return lines
 
 
-def render_checklist_note(checklist: Iterable[str], sources: list[str], source_urls: list[str], created: str, title: str = "Education vertical AI policy checklist") -> str:
+def render_checklist_note(
+    checklist: Iterable[str],
+    sources: list[str],
+    source_urls: list[str],
+    created: str,
+    title: str,
+    *,
+    related_links: list[str] | None = None,
+) -> str:
     body = [
         "---",
         f"title: {title}",
         f"created: {created}",
         f"updated: {created}",
         "type: query",
-        "tags: [ai-ml, education, technology, question]",
+        "tags: [checklist, llm-wiki]",
         f"source_notes: [{', '.join(sources)}]",
     ]
     body.extend(_yaml_list_lines("source_urls", source_urls))
@@ -148,12 +163,13 @@ def render_checklist_note(checklist: Iterable[str], sources: list[str], source_u
         "## Checklist",
     ])
     body.extend(f"- [ ] {item}" for item in checklist)
-    body.extend([
-        "",
-        "## Related",
-        "[[anthropic]], [[openai]], [[llm-wiki]]",
-        "",
-    ])
+    if related_links:
+        body.extend([
+            "",
+            "## Related",
+            ", ".join(f"[[{slug}]]" for slug in related_links),
+        ])
+    body.append("")
     return "\n".join(body)
 
 
@@ -193,19 +209,24 @@ def render_anthropic_entity(created: str, sources: list[str], source_urls: list[
     )
 
 
-def render_inbox_summary(plan: dict[str, Any], notebook_id: str, artifacts_dir: Path, share_link: str | None = None) -> str:
+def render_inbox_summary(
+    plan: dict[str, Any],
+    notebook_id: str,
+    artifacts_dir: Path,
+    share_link: str | None = None,
+    *,
+    wiki_links: list[str] | None = None,
+) -> str:
     created = datetime.now().strftime("%Y-%m-%d %H:%M:%S %Z").strip()
+    title = plan["title"]
+    source_prompt = plan.get("source_prompt", "")
     lines = [
         "---",
-        "title: Anthropic vs OpenAI 정책 비교 - 교육 Vertical AI",
+        f"title: {title}",
         "tags:",
-        "  - anthropic",
-        "  - openai",
-        "  - education",
-        "  - vertical-ai",
-        "  - policy",
         "  - notebooklm",
         "  - llm-wiki",
+        "  - inbox",
         f"date: {datetime.now().date().isoformat()}",
         f"created: {created}",
         f"updated: {created}",
@@ -217,65 +238,71 @@ def render_inbox_summary(plan: dict[str, Any], notebook_id: str, artifacts_dir: 
         lines.append(f"  - {source}")
     lines.extend([
         f"notebook_id: {notebook_id}",
-        f"notebook_title: {plan['title']}",
+        f"notebook_title: {title}",
         f"artifacts_dir: {artifacts_dir}",
-        "qmd_collection: learningmaster",
     ])
     if share_link:
         lines.append(f"share_link: {share_link}")
     lines.extend([
         "---",
         "",
-        "# Anthropic vs OpenAI 정책 비교",
+        f"# {title}",
         "",
         "> [!success]",
-        "> NotebookLM-LLM-Wiki flow로 정책 문서를 수집하고, report / mind map / Q&A를 생성해 wiki와 Obsidian에 반영했다.",
+        "> NotebookLM-LLM-Wiki flow로 source를 수집·분석하고 wiki와 Obsidian에 산출물을 적재했다.",
         "",
-        "## 생성된 wiki 페이지",
-        "- [[anthropic-vs-openai-education-vertical-ai-policy]]",
-        "- [[education-vertical-ai-policy-checklist]]",
-        "- [[anthropic]]",
-        "- [[openai]]",
-        "",
-        "## 주요 시사점",
-        "- Anthropic는 위험 통제, human review, disclosure를 강하게 전면화한다.",
-        "- OpenAI는 enterprise privacy, retention control, admin tooling을 더 강하게 상품화한다.",
-        "- 교육 vertical AI 기업은 학생 데이터 보호, minors safety, academic integrity, 관리자 통제를 정책의 핵심 축으로 가져가야 한다.",
+    ])
+    if source_prompt:
+        lines.extend([
+            "## 원본 프롬프트",
+            "",
+            f"> {source_prompt}",
+            "",
+        ])
+    if wiki_links:
+        lines.append("## 생성된 wiki 페이지")
+        for link in wiki_links:
+            lines.append(f"- [[{link}]]")
+        lines.append("")
+    lines.extend([
+        "## 다음 단계",
+        "- raw report와 checklist를 검토한다",
+        "- 필요 시 도메인(work/persona)에 맞는 폴더로 라우팅한다",
+        "- comparison 페이지의 시사점을 의사결정 근거로 변환한다",
         "",
     ])
     return "\n".join(lines)
 
 
 def render_raw_source_pack(plan: dict[str, Any], created: str) -> str:
+    title = f"Source pack — {plan['title']}"
+    source_prompt = plan.get("source_prompt", "")
     lines = [
         "---",
-        "title: Anthropic and OpenAI business policy source pack",
+        f"title: {title}",
         f"created: {created}",
         f"updated: {created}",
         "type: source",
-        "tags: [ai-ml, education, technology, research]",
+        "tags: [source, llm-wiki]",
         f"source_url: {plan['sources'][0]}",
-        "source_site: Anthropic + OpenAI official policy pages",
+        "source_site: User-provided sources",
         f"source_date: {created}",
     ]
     lines.extend(_yaml_list_lines("source_urls", plan["sources"]))
     lines.extend([
         "---",
         "",
-        "# Anthropic and OpenAI business policy source pack",
+        f"# {title}",
         "",
         "## URLs",
     ])
     lines.extend(f"- {source}" for source in plan["sources"])
-    lines.extend([
-        "",
-        "## Why these sources matter",
-        "- data ownership and training defaults",
-        "- retention and deletion windows",
-        "- minors and student safety",
-        "- human review for high-stakes decisions",
-        "- enterprise controls and compliance posture",
-        "- indemnity and legal risk allocation",
-        "",
-    ])
+    if source_prompt:
+        lines.extend([
+            "",
+            "## 수집 의도 (원본 프롬프트)",
+            "",
+            f"> {source_prompt}",
+        ])
+    lines.append("")
     return "\n".join(lines)

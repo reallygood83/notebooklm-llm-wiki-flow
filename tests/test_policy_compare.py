@@ -74,5 +74,5 @@ def test_build_comparison_draft_falls_back_when_report_has_no_table(caplog):
 
     assert draft.title == "Fallback draft"
     assert draft.key_differences
-    assert any("OpenAI" in difference[2] or "Anthropic" in difference[1] for difference in draft.key_differences)
+    assert any("OpenAI" in difference[0] or "Anthropic" in difference[0] for difference in draft.key_differences)
     assert any("falling back" in message.lower() for message in caplog.messages)

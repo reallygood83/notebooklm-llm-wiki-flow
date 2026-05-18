@@ -250,6 +250,24 @@ def score_report(report_path: Path, json_output: bool = typer.Option(False, '--j
     for bullet in payload['bullets']:
         print(f"- {bullet}")
 
+# bug #8: ax/* deps(python-docx, google-genai)는 optional extras이므로
+# import 실패 시 nlwflow CLI 자체가 죽지 않도록 lazy mount.
+try:
+    from .ax_cli import ax_app
+
+    app.add_typer(ax_app, name="ax")
+except ImportError as _ax_import_err:
+    _ax_err_msg = str(_ax_import_err)
+
+    @app.command("ax")
+    def _ax_disabled() -> None:
+        """AX tools require optional dependencies: `pip install '.[ax]'`"""
+        print(
+            f"[bold red]ax tools unavailable:[/bold red] {_ax_err_msg}\n"
+            "Install with: [bold]pip install '.[ax]'[/bold]"
+        )
+        raise typer.Exit(1)
+
 
 if __name__ == '__main__':
     app()

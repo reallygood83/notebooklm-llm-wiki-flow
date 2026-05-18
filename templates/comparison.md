@@ -7,7 +7,8 @@ tags: [ai-ml, technology, comparison]
 sources: {{ sources }}
 ---
 
-# {{ title }}
+## {{ title }}
 
 ## Summary
+
 {{ summary }}

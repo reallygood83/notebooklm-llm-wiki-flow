@@ -1,0 +1,21 @@
+{
+  // nlwflow-repo markdownlint 설정 — CI markdownlint-cli2 단계용.
+  // 기본 룰셋이 너무 엄격하여 README/docs 80건+ 오류 유발하므로 한국어 행정·기술 문서 친화적으로 완화.
+  "config": {
+    "MD013": false,  // 라인 길이 — 한국어 문서는 줄바꿈 의미 단위
+    "MD033": false,  // inline HTML — Obsidian 위키 호환
+    "MD041": false,  // 첫 줄 H1 — frontmatter 사용
+    "MD024": { "siblings_only": true },  // 동일 헤딩 — 형제 노드에서만 금지
+    "MD029": false,  // ordered list 시작 번호 자유 (이어지는 큰 번호 docs/plans 호환)
+    "MD032": false,  // blanks-around-lists — 한국어 문서 흐름에 비실용
+    "MD036": false,  // emphasis as heading — bold 사용 빈번
+    "MD046": false   // code block style — fenced/indented 혼용 허용
+  },
+  "globs": ["**/*.md"],
+  "ignores": [
+    "node_modules/**",
+    ".venv/**",
+    "scratch/**",
+    ".git/**"
+  ]
+}

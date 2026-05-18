@@ -1,0 +1,8 @@
+{
+    "venvPath": ".",
+    "venv": ".venv",
+    "include": ["src"],
+    "pythonVersion": "3.13",
+    "useLibraryCodeForTypes": true,
+    "typeCheckingMode": "basic"
+}

@@ -34,6 +34,7 @@ The LLM Wiki is not a dump of every LLM response.
 It is a structured knowledge layer that stores only information worth keeping for future decisions and reuse.
 
 Main page types
+
 - Raw source
   - original text plus provenance
 - Entity
@@ -48,29 +49,29 @@ Main page types
 Practical user benefits
 
 1. Safer outputs
-- staged writes reduce half-written file states
-- manifest.json makes each run auditable
+   - staged writes reduce half-written file states
+   - manifest.json makes each run auditable
 
 2. More trustworthy automation
-- NotebookLM CLI failures are wrapped with typed errors and step context
-- fake-client integration tests validate the core flow without real NotebookLM sessions
+   - NotebookLM CLI failures are wrapped with typed errors and step context
+   - fake-client integration tests validate the core flow without real NotebookLM sessions
 
 3. Less confusing setup
-- clear precedence:
-  - environment variables > project.yaml > .env > defaults
-- bootstrap fails loudly instead of hiding install problems
+   - clear precedence:
+     - environment variables > project.yaml > .env > defaults
+   - bootstrap fails loudly instead of hiding install problems
 
 4. More stable note quality
-- deterministic index rebuild
-- template-based entity rendering
-- parser fallback for non-table reports
+   - deterministic index rebuild
+   - template-based entity rendering
+   - parser fallback for non-table reports
 
 5. Easier collaboration and shipping
-- ruff
-- mypy
-- pytest
-- coverage gate
-- GitHub Actions on Ubuntu + macOS
+   - ruff
+   - mypy
+   - pytest
+   - coverage gate
+   - GitHub Actions on Ubuntu + macOS
 
 ===
 
@@ -91,7 +92,7 @@ Core features
 
 Prerequisites
 
-- Python 3.11+
+- Python 3.13+
 - Node.js 20+ and npm (for the qmd indexer; skip with `INSTALL_QMD_GLOBAL=0`)
 - pipx (optional — only needed for the isolated `USE_PIPX=1` path)
 
@@ -101,7 +102,7 @@ Install paths — two options
 
 `notebooklm-py` now installs automatically through the `[notebooklm]` extra.
 
-**A. One-shot install (recommended) — `./scripts/bootstrap.sh`**
+## A. One-shot install (recommended) — `./scripts/bootstrap.sh`
 
 This does everything for you:
 
@@ -110,7 +111,7 @@ This does everything for you:
 3. `python -m playwright install chromium`
 4. `npm install -g @tobilu/qmd` (optional)
 
-**B. Install directly with pip**
+## B. Install directly with pip
 
 ```bash
 python3.11 -m venv .venv
@@ -119,7 +120,7 @@ python3.11 -m venv .venv
 # qmd separately: npm install -g @tobilu/qmd
 ```
 
-**C. Prefer isolation (legacy)**
+## C. Prefer isolation (legacy)
 
 ```bash
 USE_PIPX=1 ./scripts/bootstrap.sh
@@ -189,13 +190,14 @@ Install
 
 Example usage inside Claude Code
 
-```
+```text
 /note-wiki Compare Anthropic and OpenAI education policies
   https://www.anthropic.com/legal/aup
   https://openai.com/policies/usage-policies/
 ```
 
 Claude will automatically:
+
 1. Run `nlwflow note-wiki "..." --dry-run --json` to preview the plan
 2. Ask for confirmation, then execute the real run
 3. Summarize the result (notebook_id, comparison_page, manifest_path)
@@ -212,6 +214,7 @@ Configuration precedence
 4. defaults
 
 Common environment variables
+
 - `NLWFLOW_OBSIDIAN_VAULT`
 - `NLWFLOW_WIKI_PATH`
 - `NLWFLOW_NOTEBOOKLM_COMMAND`

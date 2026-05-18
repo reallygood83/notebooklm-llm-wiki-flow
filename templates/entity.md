@@ -7,10 +7,12 @@ tags: {{ tags }}
 sources: {{ sources }}
 ---
 
-# {{ title }}
+## {{ title }}
 
 ## Overview
+
 {{ overview }}
 
 ## Key facts
+
 {{ key_facts }}

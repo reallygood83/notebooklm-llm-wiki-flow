@@ -12,6 +12,7 @@ def test_render_checklist_note_includes_clickable_source_urls():
         sources=["raw/articles/source-a.md"],
         source_urls=["https://example.com/policy"],
         created="2026-04-17",
+        title="Test checklist",
     )
 
     assert "source_notes: [raw/articles/source-a.md]" in note
