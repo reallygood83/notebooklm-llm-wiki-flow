@@ -32,6 +32,7 @@ class ComparisonDraft:
     key_differences: list[tuple[str, str, str, str]]
     checklist: list[str]
     related_links: list[str]
+    raw_table_block: str | None = None
 
 
 @dataclass(slots=True)

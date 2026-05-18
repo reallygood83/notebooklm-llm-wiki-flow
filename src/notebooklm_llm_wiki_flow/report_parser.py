@@ -39,10 +39,15 @@ def extract_report_highlights(markdown: str, max_sections: int = 4, max_bullets:
     bullets: list[str] = []
     for section in selected:
         for raw_line in section.body.splitlines():
-            line = raw_line.strip().lstrip('*').lstrip('-').strip()
+            stripped = raw_line.strip()
+            if stripped.startswith('|'):
+                continue
+            line = stripped.lstrip('*').lstrip('-').strip()
             if not line:
                 continue
             if len(line) < 12:
+                continue
+            if line.startswith('|'):
                 continue
             if line not in bullets:
                 bullets.append(line)
@@ -52,3 +57,30 @@ def extract_report_highlights(markdown: str, max_sections: int = 4, max_bullets:
             break
 
     return ReportHighlights(title=title, sections=selected, bullets=bullets)
+
+
+def extract_first_markdown_table(markdown: str) -> str | None:
+    """Return the first markdown pipe-table block as a raw string, or None.
+
+    Supports N-way comparison tables (any number of columns) without requiring
+    a fixed schema. A table is recognised by a header row that starts with '|'
+    followed by a separator row containing '---'.
+    """
+    lines = markdown.splitlines()
+    n = len(lines)
+    for i in range(n - 1):
+        header = lines[i].strip()
+        if not header.startswith('|'):
+            continue
+        separator = lines[i + 1].strip()
+        if not separator.startswith('|') or '---' not in separator:
+            continue
+        block = [lines[i].rstrip(), lines[i + 1].rstrip()]
+        for j in range(i + 2, n):
+            body_line = lines[j].rstrip()
+            if body_line.strip().startswith('|'):
+                block.append(body_line)
+            else:
+                break
+        return '\n'.join(block)
+    return None

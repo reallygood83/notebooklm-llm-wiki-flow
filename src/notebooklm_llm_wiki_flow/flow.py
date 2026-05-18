@@ -170,7 +170,12 @@ def _render_wiki_phase(plan: dict[str, Any], notebook_run: NotebookRunResult, ar
     checklist_slug = plan["wiki_outputs"]["checklist_slug"]
     checklist_title = plan["wiki_outputs"]["checklist_title"]
 
-    draft = build_comparison_draft(artifacts.raw_report_body, notebook_run.qa["answer"], title=comparison_title)
+    draft = build_comparison_draft(
+        artifacts.raw_report_body,
+        notebook_run.qa["answer"],
+        title=comparison_title,
+        source_count=len(plan["sources"]),
+    )
     comparison_content = "\n".join([
         "---",
         f"title: {comparison_title}",
@@ -265,11 +270,18 @@ def _persist_outputs_phase(
         entity_entries.append((entity.slug, entity.summary))
 
     inbox_relative = f"000-Inbox/{_safe_filename(plan['title'])}_{wiki_render.created}.md"
+    wiki_links = [wiki_render.comparison_slug, wiki_render.checklist_slug]
+    wiki_links.extend(entity.slug for entity in wiki_render.entity_renders)
     generated_files.append(
         GeneratedFile(
             relative_path=inbox_relative,
             target_path=cfg.obsidian_vault / inbox_relative,
-            content=render_inbox_summary(plan, notebook_run.notebook_id, artifacts.artifacts_dir),
+            content=render_inbox_summary(
+                plan,
+                notebook_run.notebook_id,
+                artifacts.artifacts_dir,
+                wiki_links=wiki_links,
+            ),
         )
     )
 

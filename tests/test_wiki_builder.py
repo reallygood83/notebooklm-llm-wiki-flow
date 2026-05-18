@@ -15,7 +15,7 @@ def test_render_comparison_note_contains_wikilinks_and_checklist():
 
     note = render_comparison_note(draft)
 
-    assert "## Side-by-side comparison" in note
+    assert "## Key points" in note
     assert "[[anthropic]]" in note
     assert "[[openai]]" in note
     assert "- [ ] Require human review for grading decisions" in note
